@@ -1,0 +1,30 @@
+model User {
+  id                String   @id @default(uuid())
+  name              String
+  email             String   @unique
+  password          String?  // null for OAuth users
+  role              Role
+
+  isEmailVerified   Boolean  @default(false)
+  emailVerifyToken  String?
+  
+  resetPasswordToken   String?
+  resetPasswordExpiry  DateTime?
+
+  provider          AuthProvider @default(EMAIL)
+  providerId        String?      // for OAuth
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+enum Role {
+  ADMIN
+  DOCTOR
+  PATIENT
+}
+
+enum AuthProvider {
+  EMAIL
+  GOOGLE
+}

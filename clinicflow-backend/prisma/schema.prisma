@@ -1,0 +1,206 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+//////////////////////
+// ENUMS
+//////////////////////
+
+enum Role {
+  ADMIN
+  DOCTOR
+  PATIENT
+}
+
+enum AuthProvider {
+  EMAIL
+  GOOGLE
+}
+
+enum SlotType {
+  CUSTOM
+  RECURRING
+}
+
+enum SlotMode {
+  STREAM
+  WAVE
+}
+
+enum AppointmentStatus {
+  BOOKED
+  CANCELLED
+  COMPLETED
+}
+
+//////////////////////
+// USER
+//////////////////////
+
+model User {
+  id                   String   @id @default(uuid())
+  name                 String
+  email                String   @unique
+  password             String?
+  role                 Role
+
+  doctor               Doctor?
+
+  isEmailVerified      Boolean  @default(false)
+  emailVerifyToken     String?
+
+  resetPasswordToken   String?
+  resetPasswordExpiry  DateTime?
+
+  provider             AuthProvider @default(EMAIL)
+  providerId           String?
+
+  appointments         Appointment[] @relation("PatientAppointments")
+
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+//////////////////////
+// DOCTOR
+//////////////////////
+
+model Doctor {
+  id                String   @id @default(uuid())
+  userId            String   @unique
+
+  specialization    String
+  experience        Int
+  consultationFee   Float
+
+  clinicName        String?
+  clinicAddress     String?
+
+  // RELATIONS
+  user              User @relation(fields: [userId], references: [id])
+
+  slots             Slot[]
+  recurringSlots    RecurringSlot[]
+  appointments      Appointment[]
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+//////////////////////
+// RECURRING SLOT
+//////////////////////
+
+model RecurringSlot {
+  id        String   @id @default(uuid())
+  doctorId  String
+
+  daysOfWeek Int[]   // [1,2,3] => Mon, Tue, Wed
+
+  startTime DateTime
+  endTime   DateTime
+
+  slotDuration Int
+
+  mode      SlotMode
+  maxPatientsPerSubSlot Int
+
+  validFrom DateTime
+  validTill DateTime
+
+  doctor    Doctor @relation(fields: [doctorId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([doctorId])
+}
+
+//////////////////////
+// SLOT (PARENT)
+//////////////////////
+
+model Slot {
+  id        String   @id @default(uuid())
+  doctorId  String
+
+  date      DateTime // normalized (00:00:00 UTC)
+
+  startTime DateTime
+  endTime   DateTime
+
+  slotDuration Int
+
+  type      SlotType
+  isOverride Boolean @default(false)
+
+  mode      SlotMode
+  maxPatientsPerSubSlot Int
+
+  isActive  Boolean @default(true)
+
+  // RELATIONS
+  doctor    Doctor @relation(fields: [doctorId], references: [id])
+  subSlots  SubSlot[]
+
+  createdAt DateTime @default(now())
+
+  @@index([doctorId, date])
+  @@unique([doctorId, date, startTime])
+}
+
+//////////////////////
+// SUB SLOT (BOOKABLE)
+//////////////////////
+
+model SubSlot {
+  id        String   @id @default(uuid())
+  slotId    String
+
+  startTime DateTime
+  endTime   DateTime
+
+  currentBookings Int @default(0)
+  maxBookings     Int
+
+  isFull    Boolean @default(false)
+
+  // RELATIONS
+  slot        Slot @relation(fields: [slotId], references: [id])
+  appointments Appointment[]
+
+  createdAt DateTime @default(now())
+
+  @@index([slotId])
+}
+
+//////////////////////
+// APPOINTMENT
+//////////////////////
+
+model Appointment {
+  id        String   @id @default(uuid())
+
+  patientId String
+  doctorId  String
+  subSlotId String
+
+  status    AppointmentStatus @default(BOOKED)
+
+  // RELATIONS
+  patient   User    @relation("PatientAppointments", fields: [patientId], references: [id])
+  doctor    Doctor  @relation(fields: [doctorId], references: [id])
+  subSlot   SubSlot @relation(fields: [subSlotId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([patientId])
+  @@index([doctorId])
+  @@index([subSlotId])
+
+  @@unique([patientId, subSlotId])
+}

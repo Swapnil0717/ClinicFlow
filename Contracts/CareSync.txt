@@ -1,0 +1,99 @@
+🔐 AUTH MODULE
+Register
+
+POST /auth/register
+Body:
+
+email
+password
+name
+role (DOCTOR / PATIENT)
+specialization (if doctor)
+phone (if patient)
+
+Output: AccessToken + RefreshToken
+
+Login
+
+POST /auth/login
+
+👨‍⚕️ DOCTOR MODULE
+Complete Profile
+
+POST /doctor/profile
+
+📅 SLOT MODULE (CORE LOGIC)
+1. Create Slots
+Custom Slot
+
+POST /slots/custom
+
+start_time
+end_time
+date
+mode (wave / stream)
+max_patient
+Recurring Slot
+
+POST /slots/recurring
+
+start_date
+end_date
+days (Mon–Sun)
+start_time
+end_time
+mode
+max_patient
+2. View Slots
+Doctor – All Slots
+
+GET /slots
+
+Patient – Available Slots
+
+GET /slots/available?date=
+
+3. Sub-Slots (Auto Generated)
+Get Sub-Slots
+
+GET /slots/{slot_id}/sub-slots
+
+👉 Sub-slots are created automatically by backend
+👉 Each has status: AVAILABLE / BOOKED
+
+📌 BOOKING MODULE
+1. Book Slot
+
+POST /appointments
+Body:
+
+sub_slot_id
+2. Doctor – All Bookings
+
+GET /appointments
+
+3. Patient – My Bookings
+
+GET /appointments/my
+
+4. Cancel Booking
+
+PUT /appointments/{id}/cancel
+
+5. Update Status (Optional)
+
+PUT /appointments/{id}/status
+
+CONFIRMED
+COMPLETED
+🗄️ DATABASE STRUCTURE (FINAL)
+User
+id, name, email, password, role
+Doctor
+id, user_id, specialization
+Slot (Parent)
+id, doctor_id, date, start_time, end_time, mode, max_patient
+SubSlot
+id, slot_id, start_time, end_time, status
+Appointment
+id, sub_slot_id, patient_id, status
