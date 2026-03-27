@@ -1,41 +1,48 @@
 import { Response } from "express";
 import { AppointmentService } from "./appointment.service";
 import { AuthRequest } from "../../types/express";
+import { asyncHandler } from "../../utils/asyncHandler";
 
 export class AppointmentController {
 
-  static async bookAppointment(req: AuthRequest, res: Response) {
-    try {
-      const user = req.user;
+  static bookAppointment = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const appointment = await AppointmentService.bookAppointment({
+      patientId: req.user!.userId,
+      subSlotId: req.body.subSlotId,
+      clinicId: req.user!.clinicId!,
+    });
 
-      if (!user || user.role !== "PATIENT") {
-        return res.status(403).json({
-          message: "Only patients can book appointments",
-        });
-      }
+    res.status(201).json({
+      message: "Appointment booked",
+      data: appointment,
+    });
+  });
 
-      const { subSlotId } = req.body;
+  static cancelAppointment = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const result = await AppointmentService.cancelAppointment({
+      appointmentId: req.params.appointmentId,
+      patientId: req.user!.userId,
+      clinicId: req.user!.clinicId!,
+    });
 
-      if (!subSlotId) {
-        return res.status(400).json({
-          message: "subSlotId is required",
-        });
-      }
+    res.json({ message: "Cancelled", data: result });
+  });
 
-      const appointment = await AppointmentService.bookAppointment({
-        patientId: user.userId,
-        subSlotId,
-      });
+  static getDoctorAppointments = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const data = await AppointmentService.getDoctorAppointments(
+      req.user!.doctorId!,
+      req.user!.clinicId!
+    );
 
-      return res.status(201).json({
-        message: "Appointment booked successfully",
-        data: appointment,
-      });
+    res.json({ data });
+  });
 
-    } catch (error: any) {
-      return res.status(400).json({
-        message: error.message,
-      });
-    }
-  }
+  static getPatientAppointments = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const data = await AppointmentService.getPatientAppointments(
+      req.user!.userId,
+      req.user!.clinicId!
+    );
+
+    res.json({ data });
+  });
 }

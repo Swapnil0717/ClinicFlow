@@ -1,6 +1,5 @@
 import { Router } from "express";
 import { authMiddleware } from "../../middleware/auth.middleware";
-import { allowRoles } from "../../middleware/role.middleware";
 import * as authController from "./auth.controller";
 
 const router = Router();
@@ -17,12 +16,11 @@ router.post("/google", authController.googleLogin);
 
 // Example protected route
 router.get(
-    "/me",
-    authMiddleware,
-    allowRoles("ADMIN", "DOCTOR", "PATIENT"),
-    (req, res) => {
-      res.json({ user: (req as any).user });
-    }
-  );
+  "/me",
+  authMiddleware(["ADMIN", "DOCTOR", "PATIENT"]),
+  (req, res) => {
+    res.json({ user: (req as any).user });
+  }
+);
 
 export default router;

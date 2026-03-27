@@ -6,14 +6,16 @@ import { sendEmail } from "../../utils/emailService";
 import { verifyGoogleToken } from "../../utils/googleAuth";
 import crypto from "crypto";
 
-// ✅ REGISTER
+//////////////////////////////
+// ✅ REGISTER (SaaS SAFE)
+//////////////////////////////
+
 export const registerUser = async (data: {
   name: string;
   email: string;
   password: string;
-  role: "ADMIN" | "DOCTOR" | "PATIENT";
 }) => {
-  const { name, email, password, role } = data;
+  const { name, email, password } = data;
 
   const existingUser = await prisma.user.findUnique({ where: { email } });
   if (existingUser) {
@@ -21,20 +23,18 @@ export const registerUser = async (data: {
   }
 
   const hashedPassword = await hashPassword(password);
-
   const emailToken = crypto.randomBytes(32).toString("hex");
 
-  await prisma.user.create({
+  const user = await prisma.user.create({
     data: {
       name,
       email,
       password: hashedPassword,
-      role,
+      role: "PATIENT", // 🔥 FORCE PATIENT
       emailVerifyToken: emailToken,
     },
   });
 
-  // ✅ FIXED: Use backend URL (no frontend needed)
   const verifyLink = `http://localhost:5000/api/auth/verify-email?token=${emailToken}`;
 
   await sendEmail(
@@ -44,10 +44,16 @@ export const registerUser = async (data: {
      <a href="${verifyLink}">${verifyLink}</a>`
   );
 
-  return { message: "User registered. Please verify email." };
+  return {
+    message: "User registered. Please verify email.",
+    userId: user.id,
+  };
 };
 
+//////////////////////////////
 // ✅ LOGIN
+//////////////////////////////
+
 export const loginUser = async (data: {
   email: string;
   password: string;
@@ -55,8 +61,8 @@ export const loginUser = async (data: {
   const { email, password } = data;
 
   const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) throw new Error("Invalid credentials");
 
+  if (!user) throw new Error("Invalid credentials");
   if (!user.password) throw new Error("Use Google login");
 
   const isMatch = await comparePassword(password, user.password);
@@ -66,15 +72,24 @@ export const loginUser = async (data: {
     throw new Error("Please verify your email");
   }
 
+  // 🔥 SaaS Rule
+  if (user.role !== "PATIENT" && !user.clinicId) {
+    throw new Error("Please create or join a clinic to continue");
+  }
+
   const tokens = generateTokens({
     userId: user.id,
     role: user.role,
+    clinicId: user.clinicId,
   });
 
   return tokens;
 };
 
-// ✅ FIXED: VERIFY EMAIL FUNCTION RESTORED
+//////////////////////////////
+// ✅ VERIFY EMAIL (AUTO LOGIN)
+//////////////////////////////
+
 export const verifyEmail = async (token: string) => {
   const user = await prisma.user.findFirst({
     where: { emailVerifyToken: token },
@@ -90,17 +105,28 @@ export const verifyEmail = async (token: string) => {
     },
   });
 
-  return { message: "Email verified successfully" };
+  const tokens = generateTokens({
+    userId: user.id,
+    role: user.role,
+    clinicId: user.clinicId,
+  });
+
+  return {
+    message: "Email verified successfully",
+    tokens,
+  };
 };
 
+//////////////////////////////
 // ✅ FORGOT PASSWORD
+//////////////////////////////
+
 export const forgotPassword = async (email: string) => {
   const user = await prisma.user.findUnique({ where: { email } });
 
   if (!user) throw new Error("User not found");
 
   const resetToken = crypto.randomBytes(32).toString("hex");
-
   const expiry = new Date(Date.now() + 15 * 60 * 1000);
 
   await prisma.user.update({
@@ -123,7 +149,10 @@ export const forgotPassword = async (email: string) => {
   return { message: "Reset password link sent" };
 };
 
+//////////////////////////////
 // ✅ RESET PASSWORD
+//////////////////////////////
+
 export const resetPassword = async (data: {
   token: string;
   newPassword: string;
@@ -155,7 +184,10 @@ export const resetPassword = async (data: {
   return { message: "Password reset successful" };
 };
 
+//////////////////////////////
 // ✅ GOOGLE LOGIN
+//////////////////////////////
+
 export const googleLogin = async (idToken: string) => {
   const payload = await verifyGoogleToken(idToken);
 
@@ -180,10 +212,60 @@ export const googleLogin = async (idToken: string) => {
     });
   }
 
+  // 🔥 SaaS Rule
+  if (user.role !== "PATIENT" && !user.clinicId) {
+    throw new Error("Please create or join a clinic");
+  }
+
   const tokens = generateTokens({
     userId: user.id,
     role: user.role,
+    clinicId: user.clinicId,
   });
 
   return tokens;
+};
+
+//////////////////////////////
+// ✅ CREATE CLINIC (SaaS CORE)
+//////////////////////////////
+
+export const createClinicForUser = async (
+  userId: string,
+  data: {
+    name: string;
+    address: string;
+  }
+) => {
+  return prisma.$transaction(async (tx) => {
+    const existingUser = await tx.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!existingUser) {
+      throw new Error("User not found");
+    }
+
+    if (existingUser.clinicId) {
+      throw new Error("User already belongs to a clinic");
+    }
+
+    const clinic = await tx.clinic.create({
+      data: {
+        name: data.name,
+        address: data.address,
+        ownerId: userId,
+      },
+    });
+
+    await tx.user.update({
+      where: { id: userId },
+      data: {
+        clinicId: clinic.id,
+        role: "ADMIN",
+      },
+    });
+
+    return clinic;
+  });
 };

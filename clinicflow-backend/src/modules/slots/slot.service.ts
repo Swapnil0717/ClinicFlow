@@ -1,53 +1,118 @@
-import { PrismaClient, SlotMode, SlotType } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import prisma from "../../config/db";
+import { SlotMode, SlotType } from "@prisma/client";
 
 export class SlotService {
 
   // ===============================
-  // CREATE CUSTOM SLOT
+  // CREATE RECURRING SLOT
   // ===============================
-  static async createCustomSlot(input: {
-    doctorId: string;
-    date: string;
-    startTime: string;
-    endTime: string;
-    slotDuration: number;
-    mode: SlotMode;
-    maxPatientsPerSubSlot: number;
-  }) {
-    const {
-      doctorId,
-      date,
-      startTime,
-      endTime,
-      slotDuration,
-      mode,
-      maxPatientsPerSubSlot,
-    } = input;
+  static async createRecurringSlot(req: any, input: any) {
+    const clinicId = req.clinicId;
 
-    // 🔹 Normalize date (00:00 UTC)
-    const slotDate = new Date(`${date}T00:00:00.000Z`);
+    return prisma.recurringSlot.create({
+      data: {
+        clinicId,
+        doctorId: input.doctorId,
+        daysOfWeek: input.daysOfWeek,
+        startTime: new Date(`1970-01-01T${input.startTime}:00Z`),
+        endTime: new Date(`1970-01-01T${input.endTime}:00Z`),
+        slotDuration: input.slotDuration,
+        mode: input.mode,
+        maxPatientsPerSubSlot: input.maxPatientsPerSubSlot,
+        validFrom: new Date(`${input.validFrom}T00:00:00Z`),
+        validTill: new Date(`${input.validTill}T00:00:00Z`),
+      },
+    });
+  }
 
-    const startDateTime = new Date(`${date}T${startTime}:00.000Z`);
-    const endDateTime = new Date(`${date}T${endTime}:00.000Z`);
+  // ===============================
+  // GENERATE SLOTS FROM RECURRING
+  // ===============================
+  static async generateSlotsForDate(req: any, doctorId: string, date: string) {
+    const clinicId = req.clinicId;
+    const slotDate = new Date(`${date}T00:00:00Z`);
+    const day = slotDate.getUTCDay();
 
-    if (startDateTime >= endDateTime) {
-      throw new Error("Start time must be before end time");
+    // OVERRIDE CHECK
+    const override = await prisma.slot.findFirst({
+      where: {
+        clinicId,
+        doctorId,
+        date: slotDate,
+        isOverride: true,
+      },
+    });
+
+    if (override) return;
+
+    const recurringSlots = await prisma.recurringSlot.findMany({
+      where: {
+        clinicId,
+        doctorId,
+        daysOfWeek: { has: day },
+        validFrom: { lte: slotDate },
+        validTill: { gte: slotDate },
+      },
+    });
+
+    if (!recurringSlots.length) return;
+
+    await prisma.slot.deleteMany({
+      where: {
+        clinicId,
+        doctorId,
+        date: slotDate,
+        isOverride: false,
+      },
+    });
+
+    for (const rec of recurringSlots) {
+
+      const startTime = new Date(`${date}T${rec.startTime.toISOString().slice(11,16)}:00Z`);
+      const endTime = new Date(`${date}T${rec.endTime.toISOString().slice(11,16)}:00Z`);
+
+      const slot = await prisma.slot.create({
+        data: {
+          clinicId,
+          doctorId,
+          date: slotDate,
+          startTime,
+          endTime,
+          slotDuration: rec.slotDuration,
+          type: SlotType.RECURRING,
+          mode: rec.mode,
+          maxPatientsPerSubSlot: rec.maxPatientsPerSubSlot,
+        },
+      });
+
+      const subSlots = this.generateSubSlots({
+        slotId: slot.id,
+        clinicId,
+        startTime,
+        endTime,
+        slotDuration: rec.slotDuration,
+        mode: rec.mode,
+        maxPatientsPerSubSlot: rec.maxPatientsPerSubSlot,
+      });
+
+      await prisma.subSlot.createMany({ data: subSlots });
     }
+  }
 
-    // ===============================
-    // TRANSACTION START
-    // ===============================
-    return await prisma.$transaction(async (tx) => {
+  // ===============================
+  // CREATE CUSTOM (OVERRIDE)
+  // ===============================
+  static async createCustomSlot(req: any, input: any) {
+    const clinicId = req.clinicId;
+    const slotDate = new Date(`${input.date}T00:00:00Z`);
 
-      // ===============================
-      // 1. DELETE EXISTING SLOTS (OVERRIDE LOGIC)
-      // ===============================
+    return prisma.$transaction(async (tx) => {
+
       await tx.subSlot.deleteMany({
         where: {
+          clinicId,
           slot: {
-            doctorId,
+            doctorId: input.doctorId,
             date: slotDate,
           },
         },
@@ -55,200 +120,107 @@ export class SlotService {
 
       await tx.slot.deleteMany({
         where: {
-          doctorId,
+          clinicId,
+          doctorId: input.doctorId,
           date: slotDate,
         },
       });
 
-      // ===============================
-      // 2. CREATE SLOT
-      // ===============================
       const slot = await tx.slot.create({
         data: {
-          doctorId,
+          clinicId,
+          doctorId: input.doctorId,
           date: slotDate,
-          startTime: startDateTime,
-          endTime: endDateTime,
-          slotDuration,
+          startTime: new Date(input.startTime),
+          endTime: new Date(input.endTime),
+          slotDuration: input.slotDuration,
           type: SlotType.CUSTOM,
           isOverride: true,
-          mode,
-          maxPatientsPerSubSlot,
+          mode: input.mode,
+          maxPatientsPerSubSlot: input.maxPatientsPerSubSlot,
         },
       });
 
-      // ===============================
-      // 3. GENERATE SUB-SLOTS
-      // ===============================
       const subSlots = this.generateSubSlots({
         slotId: slot.id,
-        startTime: startDateTime,
-        endTime: endDateTime,
-        slotDuration,
-        mode,
-        maxPatientsPerSubSlot,
+        clinicId,
+        startTime: new Date(input.startTime),
+        endTime: new Date(input.endTime),
+        slotDuration: input.slotDuration,
+        mode: input.mode,
+        maxPatientsPerSubSlot: input.maxPatientsPerSubSlot,
       });
 
-      // ===============================
-      // 4. BULK INSERT SUB-SLOTS
-      // ===============================
-      await tx.subSlot.createMany({
-        data: subSlots,
-      });
+      await tx.subSlot.createMany({ data: subSlots });
 
-      return {
-        slot,
-        subSlotsCount: subSlots.length,
-      };
+      return slot;
     });
   }
 
   // ===============================
-  // SUB-SLOT GENERATOR
+  // GET AVAILABLE SLOTS
+  // ===============================
+  static async getAvailableSlots(req: any, doctorId: string, date: string) {
+    const clinicId = req.clinicId;
+    const slotDate = new Date(`${date}T00:00:00Z`);
+    const now = new Date();
+
+    await this.generateSlotsForDate(req, doctorId, date);
+
+    return prisma.slot.findMany({
+      where: {
+        clinicId,
+        doctorId,
+        date: slotDate,
+        isActive: true,
+      },
+      include: {
+        subSlots: {
+          where: {
+            isFull: false,
+            startTime: { gt: now },
+          },
+          orderBy: { startTime: "asc" },
+        },
+      },
+      orderBy: { startTime: "asc" },
+    });
+  }
+
+  // ===============================
+  // SUB SLOT GENERATOR
   // ===============================
   private static generateSubSlots({
     slotId,
+    clinicId,
     startTime,
     endTime,
     slotDuration,
     mode,
     maxPatientsPerSubSlot,
-  }: {
-    slotId: string;
-    startTime: Date;
-    endTime: Date;
-    slotDuration: number;
-    mode: SlotMode;
-    maxPatientsPerSubSlot: number;
-  }) {
+  }: any) {
 
     const subSlots = [];
+    let current = new Date(startTime);
 
-    let currentStart = new Date(startTime);
+    while (current < endTime) {
+      const next = new Date(current.getTime() + slotDuration * 60000);
 
-    while (currentStart < endTime) {
-      const currentEnd = new Date(currentStart.getTime() + slotDuration * 60000);
-
-      if (currentEnd > endTime) break;
+      if (next > endTime) break;
 
       subSlots.push({
         slotId,
-        startTime: new Date(currentStart),
-        endTime: new Date(currentEnd),
+        clinicId,
+        startTime: new Date(current),
+        endTime: new Date(next),
         currentBookings: 0,
         maxBookings: mode === "STREAM" ? 1 : maxPatientsPerSubSlot,
         isFull: false,
       });
 
-      currentStart = currentEnd;
+      current = next;
     }
 
     return subSlots;
   }
-}
-static async getAvailableSlots({
-  doctorId,
-  date,
-}: {
-  doctorId: string;
-  date: string;
-}) {
-  const slotDate = new Date(`${date}T00:00:00.000Z`);
-  const now = new Date();
-
-  // ===============================
-  // 1. CHECK CUSTOM OVERRIDE
-  // ===============================
-  const customSlots = await prisma.slot.findMany({
-    where: {
-      doctorId,
-      date: slotDate,
-      isOverride: true,
-      isActive: true,
-    },
-    include: {
-      subSlots: {
-        where: {
-          isFull: false,
-          startTime: {
-            gt: now,
-          },
-        },
-        orderBy: {
-          startTime: "asc",
-        },
-      },
-    },
-  });
-
-  // If custom exists → return them only
-  if (customSlots.length > 0) {
-    return customSlots;
-  }
-
-  // ===============================
-  // 2. RETURN NORMAL (RECURRING)
-  // ===============================
-  const slots = await prisma.slot.findMany({
-    where: {
-      doctorId,
-      date: slotDate,
-      isActive: true,
-    },
-    include: {
-      subSlots: {
-        where: {
-          isFull: false,
-          startTime: {
-            gt: now,
-          },
-        },
-        orderBy: {
-          startTime: "asc",
-        },
-      },
-    },
-    orderBy: {
-      startTime: "asc",
-    },
-  });
-
-  return slots;
-}
-static async createRecurringSlot(input: {
-  doctorId: string;
-  daysOfWeek: number[];
-  startTime: string;
-  endTime: string;
-  slotDuration: number;
-  mode: "STREAM" | "WAVE";
-  maxPatientsPerSubSlot: number;
-  validFrom: string;
-  validTill: string;
-}) {
-  const {
-    doctorId,
-    daysOfWeek,
-    startTime,
-    endTime,
-    slotDuration,
-    mode,
-    maxPatientsPerSubSlot,
-    validFrom,
-    validTill,
-  } = input;
-
-  return await prisma.recurringSlot.create({
-    data: {
-      doctorId,
-      daysOfWeek,
-      startTime: new Date(`1970-01-01T${startTime}:00Z`),
-      endTime: new Date(`1970-01-01T${endTime}:00Z`),
-      slotDuration,
-      mode,
-      maxPatientsPerSubSlot,
-      validFrom: new Date(`${validFrom}T00:00:00.000Z`),
-      validTill: new Date(`${validTill}T00:00:00.000Z`),
-    },
-  });
 }

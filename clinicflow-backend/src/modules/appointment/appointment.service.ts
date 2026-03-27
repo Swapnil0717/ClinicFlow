@@ -1,65 +1,41 @@
-import { PrismaClient, AppointmentStatus } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import prisma from "../../config/db";
+import { AppointmentStatus } from "@prisma/client";
 
 export class AppointmentService {
 
-  // ===============================
-  // BOOK APPOINTMENT
-  // ===============================
-  static async bookAppointment({
-    patientId,
-    subSlotId,
-  }: {
-    patientId: string;
-    subSlotId: string;
-  }) {
+  static async bookAppointment(req: any, subSlotId: string) {
+    const clinicId = req.clinicId;
+    const patientId = req.user.userId;
 
-    return await prisma.$transaction(async (tx) => {
+    return prisma.$transaction(async (tx) => {
 
-      // ===============================
-      // 1. GET SUB SLOT
-      // ===============================
-      const subSlot = await tx.subSlot.findUnique({
-        where: { id: subSlotId },
+      const subSlot = await tx.subSlot.findFirst({
+        where: { id: subSlotId, clinicId },
       });
 
-      if (!subSlot) {
-        throw new Error("SubSlot not found");
-      }
+      if (!subSlot) throw new Error("Invalid slot");
 
-      // ===============================
-      // 2. CHECK FULL
-      // ===============================
+      const existing = await tx.appointment.findFirst({
+        where: { patientId, subSlotId, clinicId },
+      });
+
+      if (existing) throw new Error("Already booked");
+
       if (subSlot.isFull || subSlot.currentBookings >= subSlot.maxBookings) {
-        throw new Error("Slot is already full");
+        throw new Error("Slot full");
       }
 
-      // ===============================
-      // 3. ATOMIC UPDATE (CRITICAL)
-      // ===============================
       const updated = await tx.subSlot.updateMany({
         where: {
           id: subSlotId,
-          currentBookings: {
-            lt: subSlot.maxBookings,
-          },
+          clinicId,
+          currentBookings: { lt: subSlot.maxBookings },
         },
-        data: {
-          currentBookings: {
-            increment: 1,
-          },
-        },
+        data: { currentBookings: { increment: 1 } },
       });
 
-      // If no row updated → race condition happened
-      if (updated.count === 0) {
-        throw new Error("Slot just got full, try another");
-      }
+      if (updated.count === 0) throw new Error("Slot just filled");
 
-      // ===============================
-      // 4. MARK FULL IF NEEDED
-      // ===============================
       const finalSubSlot = await tx.subSlot.findUnique({
         where: { id: subSlotId },
       });
@@ -71,27 +47,59 @@ export class AppointmentService {
         });
       }
 
-      // ===============================
-      // 5. GET DOCTOR ID
-      // ===============================
-      const slot = await tx.slot.findUnique({
-        where: { id: finalSubSlot!.slotId },
+      const slot = await tx.slot.findFirst({
+        where: { id: finalSubSlot!.slotId, clinicId },
         select: { doctorId: true },
       });
 
-      // ===============================
-      // 6. CREATE APPOINTMENT
-      // ===============================
-      const appointment = await tx.appointment.create({
+      return tx.appointment.create({
         data: {
+          clinicId,
           patientId,
           doctorId: slot!.doctorId,
           subSlotId,
+          startTime: finalSubSlot!.startTime,
+          endTime: finalSubSlot!.endTime,
           status: AppointmentStatus.BOOKED,
         },
       });
+    });
+  }
 
-      return appointment;
+  static async cancelAppointment(req: any, appointmentId: string) {
+    const clinicId = req.clinicId;
+    const patientId = req.user.userId;
+
+    const appointment = await prisma.appointment.findFirst({
+      where: { id: appointmentId, clinicId },
+    });
+
+    if (!appointment) throw new Error("Not found");
+    if (appointment.patientId !== patientId) throw new Error("Unauthorized");
+
+    return prisma.appointment.update({
+      where: { id: appointmentId },
+      data: { status: AppointmentStatus.CANCELLED },
+    });
+  }
+
+  static async getDoctorAppointments(req: any) {
+    return prisma.appointment.findMany({
+      where: {
+        clinicId: req.clinicId,
+        doctorId: req.user.userId,
+      },
+      include: { patient: true },
+    });
+  }
+
+  static async getPatientAppointments(req: any) {
+    return prisma.appointment.findMany({
+      where: {
+        clinicId: req.clinicId,
+        patientId: req.user.userId,
+      },
+      include: { doctor: true },
     });
   }
 }

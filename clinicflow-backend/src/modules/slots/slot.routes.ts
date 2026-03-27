@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { SlotController } from "./slot.controller";
-import { authMiddleware } from "../../middlewares/auth.middleware";
+import { authMiddleware } from "../../middleware/auth.middleware";
 
 const router = Router();
 
@@ -9,19 +9,25 @@ const router = Router();
 // ===============================
 router.post(
   "/custom",
-  authMiddleware,
+  authMiddleware(["DOCTOR"]),
   SlotController.createCustomSlot
 );
 
-router.get(
-  "/:doctorId/available",
-  SlotController.getAvailableSlots
-);
-
+// ===============================
+// CREATE RECURRING SLOT
+// ===============================
 router.post(
   "/recurring",
-  authMiddleware,
+  authMiddleware(["DOCTOR"]),
   SlotController.createRecurringSlot
+);
+
+// ===============================
+// GET AVAILABLE SLOTS
+// ===============================
+router.get(
+  "/:doctorId",
+  SlotController.getAvailableSlots
 );
 
 export default router;

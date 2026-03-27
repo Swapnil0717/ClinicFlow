@@ -1,157 +1,61 @@
 import prisma from "../../config/db";
 import { hashPassword } from "../../utils/hashPassword";
 
-// ✅ CREATE DOCTOR (ADMIN)
-export const createDoctor = async (data: {
-  name: string;
-  email: string;
-  password: string;
-  specialization: string;
-  experience: number;
-  consultationFee: number;
-  clinicName?: string;
-  clinicAddress?: string;
-}) => {
-  const {
-    name,
-    email,
-    password,
-    specialization,
-    experience,
-    consultationFee,
-    clinicName,
-    clinicAddress,
-  } = data;
+export const createDoctor = async (req: any, data: any) => {
+  const clinicId = req.clinicId;
 
-  // Check if user already exists
-  const existingUser = await prisma.user.findUnique({ where: { email } });
-  if (existingUser) {
-    throw new Error("User already exists");
-  }
+  return prisma.$transaction(async (tx) => {
 
-  // Hash password
-  const hashedPassword = await hashPassword(password);
+    const existing = await tx.user.findUnique({
+      where: { email: data.email },
+    });
 
-  // Create user + doctor in transaction
-  const result = await prisma.$transaction(async (tx) => {
+    if (existing) throw new Error("User exists");
+
+    const hashedPassword = await hashPassword(data.password);
+
     const user = await tx.user.create({
       data: {
-        name,
-        email,
+        name: data.name,
+        email: data.email,
         password: hashedPassword,
         role: "DOCTOR",
-        isEmailVerified: true, // Admin-created → auto verified
+        clinicId,
+        isEmailVerified: true,
       },
     });
 
     const doctor = await tx.doctor.create({
       data: {
         userId: user.id,
-        specialization,
-        experience,
-        consultationFee,
-        clinicName,
-        clinicAddress,
+        clinicId,
+        specialization: data.specialization,
+        experience: data.experience,
+        consultationFee: data.consultationFee,
       },
     });
 
     return { user, doctor };
   });
-
-  return result;
 };
 
-export const getAllDoctors = async () => {
-    return await prisma.doctor.findMany({
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-      },
-    });
-  };
+export const getAllDoctors = async (req: any) => {
+  return prisma.doctor.findMany({
+    where: { clinicId: req.clinicId },
+    include: { user: true },
+  });
+};
 
-  export const getDoctorById = async (doctorId: string) => {
-    const doctor = await prisma.doctor.findUnique({
-      where: { id: doctorId },
-      include: {
-        user: {
-          select: {
-            name: true,
-            email: true,
-          },
-        },
-      },
-    });
-  
-    if (!doctor) {
-      throw new Error("Doctor not found");
-    }
-  
-    return doctor;
-  };
+export const getDoctorById = async (req: any, doctorId: string) => {
+  const doctor = await prisma.doctor.findFirst({
+    where: {
+      id: doctorId,
+      clinicId: req.clinicId,
+    },
+    include: { user: true },
+  });
 
+  if (!doctor) throw new Error("Not found");
 
-  export const updateMyDoctorProfile = async (
-    userId: string,
-    data: {
-      specialization?: string;
-      experience?: number;
-      consultationFee?: number;
-      clinicName?: string;
-      clinicAddress?: string;
-    }
-  ) => {
-    const doctor = await prisma.doctor.findUnique({
-      where: { userId },
-    });
-  
-    if (!doctor) {
-      throw new Error("Doctor profile not found");
-    }
-  
-    const updatedDoctor = await prisma.doctor.update({
-      where: { userId },
-      data,
-    });
-  
-    return updatedDoctor;
-  };
-
-  export const createDoctorProfile = async (
-    userId: string,
-    data: {
-      specialization: string;
-      experience: number;
-      consultationFee: number;
-      clinicName?: string;
-      clinicAddress?: string;
-    }
-  ) => {
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-  
-    if (!user || user.role !== "DOCTOR") {
-      throw new Error("Only doctors can create profile");
-    }
-  
-    const existing = await prisma.doctor.findUnique({
-      where: { userId },
-    });
-  
-    if (existing) {
-      throw new Error("Doctor profile already exists");
-    }
-  
-    const doctor = await prisma.doctor.create({
-      data: {
-        userId,
-        ...data,
-      },
-    });
-  
-    return doctor;
-  };
+  return doctor;
+};

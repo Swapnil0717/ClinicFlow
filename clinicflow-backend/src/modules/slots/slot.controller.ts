@@ -1,15 +1,16 @@
 import { Request, Response } from "express";
 import { SlotService } from "./slot.service";
 import { SlotMode } from "@prisma/client";
+import { AuthRequest } from "../../types/express";
 
 export class SlotController {
 
   // ===============================
   // CREATE CUSTOM SLOT
   // ===============================
-  static async createCustomSlot(req: Request, res: Response) {
+  static async createCustomSlot(req: AuthRequest, res: Response) {
     try {
-      const user = req.user as any; // from auth middleware
+      const user = req.user;
 
       if (!user || user.role !== "DOCTOR") {
         return res.status(403).json({
@@ -17,135 +18,70 @@ export class SlotController {
         });
       }
 
-      const {
-        date,
-        startTime,
-        endTime,
-        slotDuration,
-        mode,
-        maxPatientsPerSubSlot,
-      } = req.body;
-
-      // ===============================
-      // BASIC VALIDATION
-      // ===============================
-      if (
-        !date ||
-        !startTime ||
-        !endTime ||
-        !slotDuration ||
-        !mode
-      ) {
-        return res.status(400).json({
-          message: "Missing required fields",
-        });
-      }
-
-      if (!["STREAM", "WAVE"].includes(mode)) {
-        return res.status(400).json({
-          message: "Invalid slot mode",
-        });
-      }
-
-      const result = await SlotService.createCustomSlot({
+      const result = await SlotService.createCustomSlot(req, {
         doctorId: user.doctorId,
-        date,
-        startTime,
-        endTime,
-        slotDuration: Number(slotDuration),
-        mode: mode as SlotMode,
-        maxPatientsPerSubSlot: Number(maxPatientsPerSubSlot || 1),
+        ...req.body,
       });
 
       return res.status(201).json({
-        message: "Custom slot created successfully",
+        message: "Custom slot created",
         data: result,
       });
 
     } catch (error: any) {
-      console.error("Create Slot Error:", error);
-
       return res.status(500).json({
-        message: error.message || "Internal server error",
+        message: error.message,
       });
     }
   }
-}
 
-static async getAvailableSlots(req: Request, res: Response) {
-  try {
-    const { doctorId } = req.params;
-    const { date } = req.query;
+  // ===============================
+  // GET AVAILABLE SLOTS
+  // ===============================
+  static async getAvailableSlots(req: Request, res: Response) {
+    try {
+      const { doctorId } = req.params;
 
-    if (!doctorId || !date) {
-      return res.status(400).json({
-        message: "doctorId and date are required",
+      const result = await SlotService.getAvailableSlots(req, doctorId);
+
+      return res.status(200).json({
+        data: result,
+      });
+
+    } catch (error: any) {
+      return res.status(500).json({
+        message: error.message,
       });
     }
-
-    const slots = await SlotService.getAvailableSlots({
-      doctorId,
-      date: date as string,
-    });
-
-    return res.status(200).json({
-      message: "Available slots fetched",
-      data: slots,
-    });
-
-  } catch (error: any) {
-    return res.status(500).json({
-      message: error.message,
-    });
   }
-}
-static async createRecurringSlot(req: AuthRequest, res: Response) {
-  try {
-    const user = req.user;
 
-    if (!user || user.role !== "DOCTOR" || !user.doctorId) {
-      return res.status(403).json({
-        message: "Only doctors can create recurring slots",
+  // ===============================
+  // CREATE RECURRING SLOT
+  // ===============================
+  static async createRecurringSlot(req: AuthRequest, res: Response) {
+    try {
+      const user = req.user;
+
+      if (!user || user.role !== "DOCTOR") {
+        return res.status(403).json({
+          message: "Only doctors allowed",
+        });
+      }
+
+      const result = await SlotService.createRecurringSlot({
+        doctorId: user.doctorId,
+        ...req.body,
+      });
+
+      return res.status(201).json({
+        message: "Recurring slot created",
+        data: result,
+      });
+
+    } catch (error: any) {
+      return res.status(500).json({
+        message: error.message,
       });
     }
-
-    const {
-      daysOfWeek,
-      startTime,
-      endTime,
-      slotDuration,
-      mode,
-      maxPatientsPerSubSlot,
-      validFrom,
-      validTill,
-    } = req.body;
-
-    if (!daysOfWeek || daysOfWeek.length === 0) {
-      return res.status(400).json({
-        message: "daysOfWeek is required",
-      });
-    }
-
-    const result = await SlotService.createRecurringSlot({
-      doctorId: user.doctorId,
-      daysOfWeek,
-      startTime,
-      endTime,
-      slotDuration,
-      mode,
-      maxPatientsPerSubSlot,
-      validFrom,
-      validTill,
-    });
-
-    return res.status(201).json({
-      message: "Recurring slot created",
-      data: result,
-    });
-
-  } catch (error: any) {
-    return res.status(500).json({
-      message: error.message,
-    });
   }
 }
