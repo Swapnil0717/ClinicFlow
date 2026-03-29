@@ -1,68 +1,109 @@
-import { Request, Response } from "express";
+import { Response } from "express";
 import * as doctorService from "./doctor.service";
 import { AuthRequest } from "../../types/express";
 
-// Create Doctor (ADMIN)
-export const createDoctor = async (req: Request, res: Response) => {
+export const createDoctor = async (req: AuthRequest, res: Response) => {
   try {
-    const result = await doctorService.createDoctor(req.body);
-    res.status(201).json(result);
+    const result = await doctorService.createDoctor(req, req.body);
+
+    res.status(201).json({
+      success: true,
+      message: "Doctor created successfully",
+      data: result,
+    });
+
   } catch (error: any) {
-    res.status(400).json({ message: error.message });
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
 
-// Get all doctors (Public)
-export const getAllDoctors = async (req: Request, res: Response) => {
+export const verifyDoctor = async (req: AuthRequest, res: Response) => {
   try {
-    const doctors = await doctorService.getAllDoctors();
-    res.status(200).json(doctors);
+    const result = await doctorService.verifyDoctor(req.params.id);
+
+    res.json({
+      success: true,
+      message: "Doctor verified & auto-login enabled",
+      data: result,
+    });
+
   } catch (error: any) {
-    res.status(400).json({ message: error.message });
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
 
-// Get doctor by ID
-export const getDoctorById = async (req: Request, res: Response) => {
+export const getPendingDoctors = async (_req: AuthRequest, res: Response) => {
+  const doctors = await doctorService.getPendingDoctors();
+
+  res.json({
+    success: true,
+    data: doctors,
+  });
+};
+
+export const getAllDoctors = async (req: AuthRequest, res: Response) => {
   try {
-    const { id } = req.params;
-    const doctor = await doctorService.getDoctorById(id);
-    res.status(200).json(doctor);
+    const doctors = await doctorService.getAllDoctors(req);
+
+    res.json({
+      success: true,
+      data: doctors,
+    });
+
   } catch (error: any) {
-    res.status(404).json({ message: error.message });
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
 
-// Update own profile (DOCTOR)
-export const updateMyProfile = async (
-  req: AuthRequest,
-  res: Response
-) => {
+export const getDoctorById = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.user?.userId;
+    const doctor = await doctorService.getDoctorById(req, req.params.id);
 
-    const updated = await doctorService.updateMyDoctorProfile(
-      userId as string,
-      req.body
+    res.json({
+      success: true,
+      data: doctor,
+    });
+
+  } catch (error: any) {
+    res.status(404).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+//////////////////////////////
+// REJECT DOCTOR
+//////////////////////////////
+
+export const rejectDoctor = async (req: AuthRequest, res: Response) => {
+  try {
+    const { reason } = req.body;
+
+    const doctor = await doctorService.rejectDoctor(
+      req.params.id,
+      reason
     );
 
-    res.status(200).json(updated);
+    res.json({
+      success: true,
+      message: "Doctor rejected",
+      data: doctor,
+    });
+
   } catch (error: any) {
-    res.status(400).json({ message: error.message });
-  }
-};
-
-export const completeProfile = async (req: AuthRequest, res: Response) => {
-  try {
-    const userId = req.user?.userId;
-
-    const result = await doctorService.createDoctorProfile(
-      userId as string,
-      req.body
-    );
-
-    res.status(201).json(result);
-  } catch (error: any) {
-    res.status(400).json({ message: error.message });
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
   }
 };

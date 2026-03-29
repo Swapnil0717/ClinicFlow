@@ -1,24 +1,24 @@
 import { Router } from "express";
-import { authMiddleware } from "../../middleware/auth.middleware";
 import { DashboardController } from "./dashboard.controller";
+import { authMiddleware } from "../../middleware/auth.middleware";
 
 const router = Router();
 
-// 🩺 Doctor Dashboard
+// 🩺 Doctor
 router.get(
   "/doctor",
   authMiddleware(["DOCTOR"]),
   DashboardController.getDoctorDashboard
 );
 
-// 👤 Patient Dashboard
+// 👤 Patient
 router.get(
   "/patient",
   authMiddleware(["PATIENT"]),
   DashboardController.getPatientDashboard
 );
 
-// 🏥 Clinic Dashboard (Admin)
+// 🏥 Admin (Clinic)
 router.get(
   "/clinic",
   authMiddleware(["ADMIN"]),

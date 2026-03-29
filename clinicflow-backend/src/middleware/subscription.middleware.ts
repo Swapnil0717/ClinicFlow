@@ -1,4 +1,4 @@
-
+import prisma from "../config/db";
 
 export const requireActiveSubscription = async (req, res, next) => {
     const clinicId = req.user.clinicId;

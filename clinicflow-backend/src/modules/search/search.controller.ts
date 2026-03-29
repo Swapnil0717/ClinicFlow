@@ -2,14 +2,19 @@ import { Request, Response } from "express";
 import { SearchService } from "./search.service";
 
 export class SearchController {
-
   static async searchDoctors(req: Request, res: Response) {
     try {
-      const { specialization, date } = req.query;
+      const { specialization, clinicId } = req.query;
+
+      if (!clinicId) {
+        return res.status(400).json({
+          message: "clinicId is required",
+        });
+      }
 
       const doctors = await SearchService.searchDoctors({
+        clinicId: clinicId as string,
         specialization: specialization as string,
-        date: date as string,
       });
 
       return res.status(200).json({

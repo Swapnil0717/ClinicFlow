@@ -7,196 +7,128 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-//////////////////////
-// ENUMS
-//////////////////////
-
-enum Role {
-  ADMIN
-  DOCTOR
-  PATIENT
-}
-
-enum AuthProvider {
-  EMAIL
-  GOOGLE
-}
-
-enum SlotType {
-  CUSTOM
-  RECURRING
-}
-
-enum SlotMode {
-  STREAM
-  WAVE
-}
-
-enum AppointmentStatus {
-  BOOKED
-  COMPLETED
-  CANCELLED
-  NO_SHOW
-}
-
-//////////////////////
-// USER
-//////////////////////
-
 model User {
-  id        String   @id @default(uuid())
-  name      String
-  email     String   @unique
-  password  String?
-  role      Role
+  id                    String   @id @default(uuid())
+  name                  String
+  email                 String   @unique
+  password              String?
+  role                  Role     @default(PATIENT)
 
-  // 🔥 RELATIONS
-  doctor    Doctor?
+  clinicId              String?
+  clinic                Clinic?  @relation(fields: [clinicId], references: [id])
 
-  clinicId  String?
-  clinic    Clinic? @relation("ClinicUsers", fields: [clinicId], references: [id], onDelete: SetNull)
+  isEmailVerified       Boolean  @default(false)
+  emailVerifyToken      String?
+  emailVerifyExpiry     DateTime?
 
-  ownedClinic Clinic? @relation("ClinicOwner")
+  resetPasswordToken    String?
+  resetPasswordExpiry   DateTime?
 
-  appointments Appointment[] @relation("PatientAppointments")
+  provider              String?
+  providerId            String?
 
-  // 🔐 AUTH
-  isEmailVerified      Boolean  @default(false)
-  emailVerifyToken     String?
-  resetPasswordToken   String?
-  resetPasswordExpiry  DateTime?
+  refreshToken          String?
 
-  provider    AuthProvider @default(EMAIL)
-  providerId  String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  patient               Patient?
+  doctor                Doctor?
+  clinicsOwned          Clinic[] @relation("ClinicOwner")
 
-  @@index([clinicId])
+  @@index([emailVerifyToken])
+  @@index([resetPasswordToken])
 }
 
-//////////////////////
-// CLINIC (TENANT CORE)
-//////////////////////
+model Patient {
+  id        String @id @default(uuid())
+  userId    String @unique
+  user      User   @relation(fields: [userId], references: [id])
+
+  appointments Appointment[]
+}
+
+model Doctor {
+  id        String @id @default(uuid())
+  userId    String @unique
+  user      User   @relation(fields: [userId], references: [id])
+
+  clinicId  String
+  clinic    Clinic @relation(fields: [clinicId], references: [id])
+
+  isVerified Boolean @default(false)
+  rejected   Boolean @default(false)
+  rejectionReason String?
+
+  specialization String?
+  experience     Int?
+
+  appointments Appointment[]
+  slots        Slot[]
+  recurringSlots RecurringSlot[]
+}
 
 model Clinic {
-  id        String   @id @default(uuid())
+  id        String @id @default(uuid())
   name      String
   address   String
 
-  // 🔥 OWNER
-  ownerId   String   @unique
-  owner     User     @relation("ClinicOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  isVerified Boolean @default(false)
 
-  // 🔥 RELATIONS
-  users     User[]   @relation("ClinicUsers")
+  ownerId   String
+  owner     User @relation("ClinicOwner", fields: [ownerId], references: [id])
+
+  users     User[]
   doctors   Doctor[]
 
+  rejected   Boolean @default(false)        
+  rejectionReason String? 
+
+  createdAt DateTime @default(now())
+
+  appointments Appointment[]
   slots        Slot[]
   subSlots     SubSlot[]
-  appointments Appointment[]
   recurringSlots RecurringSlot[]
-
-  createdAt DateTime @default(now())
 }
 
-//////////////////////
-// DOCTOR
-//////////////////////
-
-model Doctor {
-  id              String   @id @default(uuid())
-  userId          String   @unique
-
-  specialization  String
-  experience      Int
-  consultationFee Float
-
-  clinicId String
-  clinic   Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-
-  // RELATIONS
-  user         User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  slots        Slot[]
-  recurringSlots RecurringSlot[]
-  appointments Appointment[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([clinicId])
-}
-
-//////////////////////
-// RECURRING SLOT
-//////////////////////
-
-model RecurringSlot {
-  id        String   @id @default(uuid())
-  doctorId  String
-  clinicId  String
-
-  daysOfWeek Int[]
-
-  startTime DateTime
-  endTime   DateTime
-
-  slotDuration Int
-  mode      SlotMode
-  maxPatientsPerSubSlot Int
-
-  validFrom DateTime
-  validTill DateTime
-
-  doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
-  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-
-  @@index([doctorId, clinicId])
-}
-
-//////////////////////
-// SLOT
-//////////////////////
+//////////////////////////////////////
+// SLOT SYSTEM
+//////////////////////////////////////
 
 model Slot {
-  id        String   @id @default(uuid())
-  doctorId  String
+  id        String @id @default(uuid())
+
   clinicId  String
+  doctorId  String
+
+  clinic    Clinic @relation(fields: [clinicId], references: [id])
+  doctor    Doctor @relation(fields: [doctorId], references: [id])
 
   date      DateTime
   startTime DateTime
   endTime   DateTime
 
   slotDuration Int
+
   type      SlotType
   isOverride Boolean @default(false)
+  isActive   Boolean @default(true)
 
   mode      SlotMode
   maxPatientsPerSubSlot Int
 
-  isActive  Boolean @default(true)
-
-  doctor   Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
-  clinic   Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-
-  subSlots SubSlot[]
-
-  createdAt DateTime @default(now())
-
-  @@index([clinicId, doctorId, date])
-  @@unique([doctorId, date, startTime])
+  subSlots  SubSlot[]
 }
 
-//////////////////////
-// SUB SLOT
-//////////////////////
-
 model SubSlot {
-  id        String   @id @default(uuid())
+  id        String @id @default(uuid())
+
   slotId    String
   clinicId  String
+
+  slot      Slot   @relation(fields: [slotId], references: [id])
+  clinic    Clinic @relation(fields: [clinicId], references: [id])
 
   startTime DateTime
   endTime   DateTime
@@ -206,42 +138,81 @@ model SubSlot {
 
   isFull Boolean @default(false)
 
-  slot   Slot   @relation(fields: [slotId], references: [id], onDelete: Cascade)
-  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-
   appointments Appointment[]
-
-  createdAt DateTime @default(now())
-
-  @@index([clinicId, slotId])
 }
 
-//////////////////////
-// APPOINTMENT
-//////////////////////
+model RecurringSlot {
+  id        String @id @default(uuid())
+
+  clinicId  String
+  doctorId  String
+
+  clinic    Clinic @relation(fields: [clinicId], references: [id])
+  doctor    Doctor @relation(fields: [doctorId], references: [id])
+
+  daysOfWeek Int[]
+
+  startTime DateTime
+  endTime   DateTime
+
+  slotDuration Int
+
+  mode      SlotMode
+  maxPatientsPerSubSlot Int
+
+  validFrom DateTime
+  validTill DateTime
+}
+
+//////////////////////////////////////
+// APPOINTMENT (UPDATED)
+//////////////////////////////////////
 
 model Appointment {
   id        String   @id @default(uuid())
 
   patientId String
   doctorId  String
-  subSlotId String
   clinicId  String
+  subSlotId String
+
+  patient   Patient @relation(fields: [patientId], references: [id])
+  doctor    Doctor  @relation(fields: [doctorId], references: [id])
+  clinic    Clinic  @relation(fields: [clinicId], references: [id])
+  subSlot   SubSlot @relation(fields: [subSlotId], references: [id])
 
   startTime DateTime
   endTime   DateTime
 
-  status AppointmentStatus @default(BOOKED)
+  status    AppointmentStatus @default(CONFIRMED)
 
-  patient User   @relation("PatientAppointments", fields: [patientId], references: [id], onDelete: Cascade)
-  doctor  Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
-  subSlot SubSlot @relation(fields: [subSlotId], references: [id], onDelete: Cascade)
-  clinic  Clinic  @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  cancelledBy Role?        // 🔥 NEW
+  cancelledAt DateTime?    // 🔥 NEW
 
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+}
 
-  @@index([clinicId, doctorId, startTime])
-  @@index([patientId])
-  @@unique([patientId, subSlotId])
+//////////////////////////////////////
+// ENUMS
+//////////////////////////////////////
+
+enum Role {
+  ADMIN
+  DOCTOR
+  PATIENT
+}
+
+enum AppointmentStatus {
+  CONFIRMED
+  CANCELLED
+}
+
+enum SlotType {
+  RECURRING
+  CUSTOM
+}
+
+enum SlotMode {
+  STREAM
+  WAVE
 }

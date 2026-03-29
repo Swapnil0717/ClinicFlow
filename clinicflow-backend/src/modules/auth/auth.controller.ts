@@ -31,3 +31,16 @@ export const googleLogin = asyncHandler(async (req: Request, res: Response) => {
   const tokens = await authService.googleLogin(req.body.idToken);
   res.status(200).json(tokens);
 });
+
+export const refreshToken = asyncHandler(async (req, res) => {
+  const { refreshToken } = req.body;
+
+  const tokens = await authService.refreshAccessToken(refreshToken);
+
+  res.json(tokens);
+});
+
+export const logout = asyncHandler(async (req: any, res) => {
+  const result = await authService.logoutUser(req.user.userId);
+  res.json(result);
+});

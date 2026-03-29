@@ -1,13 +1,13 @@
 import prisma from "../../config/db";
-import { SlotMode, SlotType } from "@prisma/client";
+import { SlotType } from "@prisma/client";
 
 export class SlotService {
 
   // ===============================
   // CREATE RECURRING SLOT
   // ===============================
-  static async createRecurringSlot(req: any, input: any) {
-    const clinicId = req.clinicId;
+  static async createRecurringSlot(input: any) {
+    const { clinicId } = input;
 
     return prisma.recurringSlot.create({
       data: {
@@ -28,12 +28,15 @@ export class SlotService {
   // ===============================
   // GENERATE SLOTS FROM RECURRING
   // ===============================
-  static async generateSlotsForDate(req: any, doctorId: string, date: string) {
-    const clinicId = req.clinicId;
+  static async generateSlotsForDate({
+    clinicId,
+    doctorId,
+    date,
+  }: any) {
+
     const slotDate = new Date(`${date}T00:00:00Z`);
     const day = slotDate.getUTCDay();
 
-    // OVERRIDE CHECK
     const override = await prisma.slot.findFirst({
       where: {
         clinicId,
@@ -100,10 +103,10 @@ export class SlotService {
   }
 
   // ===============================
-  // CREATE CUSTOM (OVERRIDE)
+  // CREATE CUSTOM SLOT
   // ===============================
-  static async createCustomSlot(req: any, input: any) {
-    const clinicId = req.clinicId;
+  static async createCustomSlot(input: any) {
+    const { clinicId, doctorId } = input;
     const slotDate = new Date(`${input.date}T00:00:00Z`);
 
     return prisma.$transaction(async (tx) => {
@@ -111,17 +114,14 @@ export class SlotService {
       await tx.subSlot.deleteMany({
         where: {
           clinicId,
-          slot: {
-            doctorId: input.doctorId,
-            date: slotDate,
-          },
+          slot: { doctorId, date: slotDate },
         },
       });
 
       await tx.slot.deleteMany({
         where: {
           clinicId,
-          doctorId: input.doctorId,
+          doctorId,
           date: slotDate,
         },
       });
@@ -129,7 +129,7 @@ export class SlotService {
       const slot = await tx.slot.create({
         data: {
           clinicId,
-          doctorId: input.doctorId,
+          doctorId,
           date: slotDate,
           startTime: new Date(input.startTime),
           endTime: new Date(input.endTime),
@@ -160,12 +160,12 @@ export class SlotService {
   // ===============================
   // GET AVAILABLE SLOTS
   // ===============================
-  static async getAvailableSlots(req: any, doctorId: string, date: string) {
-    const clinicId = req.clinicId;
+  static async getAvailableSlots({ clinicId, doctorId, date }: any) {
+
     const slotDate = new Date(`${date}T00:00:00Z`);
     const now = new Date();
 
-    await this.generateSlotsForDate(req, doctorId, date);
+    await this.generateSlotsForDate({ clinicId, doctorId, date });
 
     return prisma.slot.findMany({
       where: {
@@ -190,7 +190,7 @@ export class SlotService {
   // ===============================
   // SUB SLOT GENERATOR
   // ===============================
-  private static generateSubSlots({
+  static generateSubSlots({
     slotId,
     clinicId,
     startTime,

@@ -1,34 +1,42 @@
 import prisma from "../../config/db";
 import { AppointmentStatus } from "@prisma/client";
+import {
+  DoctorDashboardInput,
+  PatientDashboardInput,
+  ClinicDashboardInput,
+} from "./dashboard.types";
 
 export class DashboardService {
 
-  // ===============================
-  // DOCTOR DASHBOARD
-  // ===============================
-  static async getDoctorDashboard(req: any) {
-    const clinicId = req.clinicId;
-    const doctorId = req.user.userId;
-
+  // ======================================
+  // 🩺 DOCTOR DASHBOARD
+  // ======================================
+  static async getDoctorDashboard({ doctorId, clinicId }: DoctorDashboardInput) {
     const now = new Date();
-    const today = new Date().toISOString().split("T")[0];
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
 
-    const appointments = await prisma.appointment.findMany({
-      where: { clinicId, doctorId },
-      orderBy: { startTime: "asc" },
-    });
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
 
-    const patients = await prisma.appointment.findMany({
-      where: { clinicId, doctorId },
-      distinct: ["patientId"],
-    });
+    const [appointments, totalPatients] = await Promise.all([
+      prisma.appointment.findMany({
+        where: { doctorId, clinicId },
+        orderBy: { date: "asc" },
+      }),
 
-    let summary = {
+      prisma.appointment.count({
+        where: { doctorId, clinicId },
+        distinct: ["patientId"],
+      }),
+    ]);
+
+    const summary = {
       totalAppointments: appointments.length,
       upcoming: 0,
       completed: 0,
       cancelled: 0,
-      totalPatients: patients.length,
+      totalPatients,
     };
 
     const todayAppointments: any[] = [];
@@ -37,11 +45,11 @@ export class DashboardService {
       if (a.status === AppointmentStatus.COMPLETED) summary.completed++;
       else if (a.status === AppointmentStatus.CANCELLED) summary.cancelled++;
 
-      if (a.startTime > now && a.status === AppointmentStatus.BOOKED) {
+      if (a.status === AppointmentStatus.CONFIRMED && a.date > now) {
         summary.upcoming++;
       }
 
-      if (a.startTime.toISOString().startsWith(today)) {
+      if (a.date >= todayStart && a.date <= todayEnd) {
         todayAppointments.push(a);
       }
     }
@@ -52,24 +60,35 @@ export class DashboardService {
     };
   }
 
-  // ===============================
-  // PATIENT DASHBOARD
-  // ===============================
-  static async getPatientDashboard(req: any) {
-    const clinicId = req.clinicId;
-    const patientId = req.user.userId;
+  // ======================================
+  // 👤 PATIENT DASHBOARD
+  // ======================================
+  static async getPatientDashboard({ userId, clinicId }: PatientDashboardInput) {
+    const patient = await prisma.patient.findUnique({
+      where: { userId },
+    });
+
+    if (!patient) {
+      throw new Error("Patient not found");
+    }
+
     const now = new Date();
 
     const appointments = await prisma.appointment.findMany({
-      where: { clinicId, patientId },
+      where: {
+        patientId: patient.id,
+        ...(clinicId ? { clinicId } : {}),
+      },
       include: {
         doctor: {
           include: {
-            user: { select: { name: true } },
+            user: {
+              select: { name: true },
+            },
           },
         },
       },
-      orderBy: { startTime: "asc" },
+      orderBy: { date: "asc" },
     });
 
     const summary = {
@@ -89,11 +108,11 @@ export class DashboardService {
       const formatted = {
         id: a.id,
         doctorName: a.doctor.user.name,
-        time: a.startTime,
+        time: a.date,
         status: a.status,
       };
 
-      if (a.startTime > now && a.status === AppointmentStatus.BOOKED) {
+      if (a.status === AppointmentStatus.CONFIRMED && a.date > now) {
         summary.upcoming++;
         upcoming.push(formatted);
       } else {
@@ -105,6 +124,31 @@ export class DashboardService {
       summary,
       upcoming,
       history,
+    };
+  }
+
+  // ======================================
+  // 🏥 CLINIC DASHBOARD (ADMIN)
+  // ======================================
+  static async getClinicDashboard({ clinicId }: ClinicDashboardInput) {
+
+    const [appointmentsCount, doctorsCount, patientsCount] =
+      await Promise.all([
+        prisma.appointment.count({ where: { clinicId } }),
+
+        prisma.doctor.count({
+          where: { clinicId },
+        }),
+
+        prisma.patient.count({
+          where: { clinicId }, // ✅ SaaS SAFE FIX
+        }),
+      ]);
+
+    return {
+      totalAppointments: appointmentsCount,
+      totalDoctors: doctorsCount,
+      totalPatients: patientsCount,
     };
   }
 }

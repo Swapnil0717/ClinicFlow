@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import { SlotService } from "./slot.service";
-import { SlotMode } from "@prisma/client";
 import { AuthRequest } from "../../types/express";
 
 export class SlotController {
@@ -18,8 +17,9 @@ export class SlotController {
         });
       }
 
-      const result = await SlotService.createCustomSlot(req, {
-        doctorId: user.doctorId,
+      const result = await SlotService.createCustomSlot({
+        clinicId: user.clinicId!,
+        doctorId: user.doctorId!,
         ...req.body,
       });
 
@@ -41,8 +41,19 @@ export class SlotController {
   static async getAvailableSlots(req: Request, res: Response) {
     try {
       const { doctorId } = req.params;
+      const { date, clinicId } = req.query;
 
-      const result = await SlotService.getAvailableSlots(req, doctorId);
+      if (!clinicId || !date) {
+        return res.status(400).json({
+          message: "clinicId and date are required",
+        });
+      }
+
+      const result = await SlotService.getAvailableSlots({
+        clinicId: clinicId as string,
+        doctorId,
+        date: date as string,
+      });
 
       return res.status(200).json({
         data: result,
@@ -69,7 +80,8 @@ export class SlotController {
       }
 
       const result = await SlotService.createRecurringSlot({
-        doctorId: user.doctorId,
+        clinicId: user.clinicId!,
+        doctorId: user.doctorId!,
         ...req.body,
       });
 

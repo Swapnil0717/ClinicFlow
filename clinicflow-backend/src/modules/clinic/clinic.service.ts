@@ -1,37 +1,59 @@
 import prisma from "../../config/db";
+import { sendEmail } from "../../utils/emailService";
 
 export class ClinicService {
 
-  static async createClinic(req: any, data: any) {
-    const userId = req.user.userId;
-
-    return prisma.$transaction(async (tx) => {
-
-      const existing = await tx.user.findUnique({
-        where: { id: userId },
-      });
-
-      if (existing?.clinicId) {
-        throw new Error("Already in clinic");
-      }
-
-      const clinic = await tx.clinic.create({
-        data,
-      });
-
-      await tx.user.update({
-        where: { id: userId },
-        data: {
-          clinicId: clinic.id,
-          role: "ADMIN",
-        },
-      });
-
-      return clinic;
+  //////////////////////////////
+  // VERIFY CLINIC
+  //////////////////////////////
+  static async verifyClinic(clinicId: string) {
+    const clinic = await prisma.clinic.update({
+      where: { id: clinicId },
+      data: { isVerified: true, rejected: false },
+      include: { owner: true },
     });
+
+    await sendEmail(
+      clinic.owner.email,
+      "🏥 Clinic Approved",
+      `
+      <h2>Hello ${clinic.owner.name}</h2>
+      <p>Your clinic <b>${clinic.name}</b> has been approved.</p>
+      `
+    );
+
+    return clinic;
   }
 
-  static async getClinics(req: any) {
-    return prisma.clinic.findMany();
+  //////////////////////////////
+  // ❌ REJECT CLINIC (NEW)
+  //////////////////////////////
+  static async rejectClinic(clinicId: string, reason: string) {
+
+    if (!reason) {
+      throw new Error("Rejection reason is required");
+    }
+
+    const clinic = await prisma.clinic.update({
+      where: { id: clinicId },
+      data: {
+        rejected: true,
+        rejectionReason: reason,
+        isVerified: false,
+      },
+      include: { owner: true },
+    });
+
+    await sendEmail(
+      clinic.owner.email,
+      "❌ Clinic Rejected",
+      `
+      <h2>Hello ${clinic.owner.name}</h2>
+      <p>Your clinic <b>${clinic.name}</b> has been rejected.</p>
+      <p><b>Reason:</b> ${reason}</p>
+      `
+    );
+
+    return clinic;
   }
 }

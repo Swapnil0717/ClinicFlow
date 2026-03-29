@@ -7,8 +7,6 @@ const router = Router();
 router.post("/register", authController.register);
 router.post("/login", authController.login);
 
-router.get("/verify-email", authController.verifyEmail);
-
 router.post("/forgot-password", authController.forgotPassword);
 router.post("/reset-password", authController.resetPassword);
 router.get("/verify-email", authController.verifyEmail);
@@ -21,6 +19,14 @@ router.get(
   (req, res) => {
     res.json({ user: (req as any).user });
   }
+);
+
+router.post("/refresh", authController.refreshToken);
+
+router.post(
+  "/logout",
+  authMiddleware(),
+  authController.logout
 );
 
 export default router;
