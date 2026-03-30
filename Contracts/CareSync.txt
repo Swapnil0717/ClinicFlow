@@ -1,112 +1,288 @@
-🚀 ClinicFlow Backend API Docs
+🚀 ClinicFlow Backend API Documentation
 🌐 Base URL
 http://localhost:5000/api/v1
 🔐 AUTH APIs
-1️⃣ Register
-POST /auth/register
-Body
+✅ Register
+
+POST
+
+http://localhost:5000/api/v1/auth/register
+
+Body:
+
 {
-  "name": "Pranav",
-  "email": "pranavpathhare0987@gmail.com",
+  "name": "John Doe",
+  "email": "john@example.com",
   "password": "123456",
   "role": "PATIENT"
 }
-2️⃣ Login
-POST /auth/login
-Body
+✅ Login
+
+POST
+
+http://localhost:5000/api/v1/auth/login
+
+Body:
+
 {
-  "email": "pranavpathhare0987@gmail.com",
+  "email": "john@example.com",
   "password": "123456"
 }
-3️⃣ Verify Email
-GET /auth/verify-email?token=YOUR_TOKEN
-4️⃣ Forgot Password
-POST /auth/forgot-password
-Body
+✅ Google Login
+
+POST
+
+http://localhost:5000/api/v1/auth/google
+
+Body:
+
 {
-  "email": "pranavpathhare0987@gmail.com"
+  "idToken": "GOOGLE_ID_TOKEN"
 }
-5️⃣ Reset Password
-POST /auth/reset-password
-Body
+✅ Verify Email
+
+GET
+
+http://localhost:5000/api/v1/auth/verify-email?token=YOUR_TOKEN
+✅ Forgot Password
+
+POST
+
+http://localhost:5000/api/v1/auth/forgot-password
+
+Body:
+
+{
+  "email": "john@example.com"
+}
+✅ Reset Password
+
+POST
+
+http://localhost:5000/api/v1/auth/reset-password
+
+Body:
+
 {
   "token": "RESET_TOKEN",
-  "password": "newpassword"
+  "newPassword": "123456"
 }
-6️⃣ Google OAuth
-GET /auth/google
-GET /auth/google/callback
-👤 ADMIN APIs
-1️⃣ Become Admin (temporary/debug)
-POST /admin/become
-Headers
-Authorization: Bearer TOKEN
-2️⃣ Verify Clinic
-PATCH /admin/clinic/verify/:clinicId
-3️⃣ Reject Clinic
-PATCH /admin/clinic/reject/:clinicId
-Body
+✅ Refresh Token
+
+POST
+
+http://localhost:5000/api/v1/auth/refresh
+
+Body:
+
+{
+  "refreshToken": "REFRESH_TOKEN"
+}
+✅ Logout
+
+POST
+
+http://localhost:5000/api/v1/auth/logout
+
+🔒 Headers:
+
+Authorization: Bearer ACCESS_TOKEN
+✅ Get Current User
+
+GET
+
+http://localhost:5000/api/v1/auth/me
+🏥 CLINIC APIs
+✅ Create Clinic
+
+POST
+
+http://localhost:5000/api/v1/clinics
+
+🔒 Role: PATIENT
+
+Body (example):
+
+{
+  "name": "City Care Clinic",
+  "address": "Pune",
+  "phone": "9999999999"
+}
+✅ Get My Clinic
+
+GET
+
+http://localhost:5000/api/v1/clinics/me
+✅ Verify Clinic
+
+PATCH
+
+http://localhost:5000/api/v1/clinics/verify/CLINIC_ID
+👨‍⚕️ DOCTOR APIs
+✅ Create Doctor
+
+POST
+
+http://localhost:5000/api/v1/doctors
+
+🔒 ADMIN
+
+Body:
+
+{
+  "name": "Dr. Smith",
+  "specialization": "Cardiologist",
+  "experience": 5,
+  "clinicId": "CLINIC_ID"
+}
+✅ Get All Doctors
+
+GET
+
+http://localhost:5000/api/v1/doctors
+✅ Get Doctor By ID
+
+GET
+
+http://localhost:5000/api/v1/doctors/DOCTOR_ID
+✅ Pending Doctors
+
+GET
+
+http://localhost:5000/api/v1/doctors/pending
+✅ Verify Doctor
+
+PATCH
+
+http://localhost:5000/api/v1/doctors/verify/DOCTOR_ID
+❌ Reject Doctor
+
+PATCH
+
+http://localhost:5000/api/v1/doctors/reject/DOCTOR_ID
+
+Body:
+
 {
   "reason": "Invalid documents"
 }
-4️⃣ Verify Doctor
-PATCH /admin/doctor/verify/:doctorId
-5️⃣ Reject Doctor
-PATCH /admin/doctor/reject/:doctorId
-Body
-{
-  "reason": "Not qualified"
-}
-🏥 CLINIC APIs
-1️⃣ Create Clinic
-POST /clinic
-Body
-{
-  "name": "HealthCare Clinic",
-  "address": "Pune"
-}
-2️⃣ Get Clinics
-GET /clinic
-🩺 DOCTOR APIs
-1️⃣ Create Doctor Profile
-POST /doctor
-2️⃣ Get Pending Doctors (Admin)
-GET /doctor/pending
-📅 SLOT APIs
-1️⃣ Create Slot
-POST /slot
-2️⃣ Create Recurring Slot
-POST /slot/recurring
-3️⃣ Get Slots
-GET /slot
-📅 APPOINTMENT APIs
-1️⃣ Book Appointment
-POST /appointments/book
-Body
-{
-  "subSlotId": "SUBSLOT_ID"
-}
-2️⃣ Get Patient Appointments
-GET /appointments/patient
-3️⃣ Get Doctor Appointments
-GET /appointments/doctor
-4️⃣ Cancel Appointment (Patient)
-PATCH /appointments/cancel/:appointmentId
-5️⃣ Cancel Appointment (Doctor)
-PATCH /appointments/doctor/cancel/:appointmentId
-🔐 AUTH HEADERS (IMPORTANT)
+👑 ADMIN APIs
+✅ Pending Clinics
 
-For protected routes:
+GET
 
+http://localhost:5000/api/v1/admin/pending-clinics
+✅ Pending Doctors
+
+GET
+
+http://localhost:5000/api/v1/admin/pending-doctors
+✅ Verify Clinic
+
+PATCH
+
+http://localhost:5000/api/v1/admin/verify-clinic/CLINIC_ID
+✅ Verify Doctor
+
+PATCH
+
+http://localhost:5000/api/v1/admin/verify-doctor/DOCTOR_ID
+❌ Reject Clinic
+
+PATCH
+
+http://localhost:5000/api/v1/admin/reject-clinic/CLINIC_ID
+
+Body:
+
+{
+  "reason": "Incomplete documents"
+}
+✅ Become Admin
+
+POST
+
+http://localhost:5000/api/v1/admin/become
+📅 APPOINTMENTS
+✅ Book Appointment
+
+POST
+
+http://localhost:5000/api/v1/appointments/book
+
+🔒 PATIENT
+
+Body:
+
+{
+  "subSlotId": "SUB_SLOT_ID"
+}
+✅ Patient Appointments
+
+GET
+
+http://localhost:5000/api/v1/appointments/patient
+✅ Doctor Appointments
+
+GET
+
+http://localhost:5000/api/v1/appointments/doctor
+❌ Cancel (Patient)
+
+PATCH
+
+http://localhost:5000/api/v1/appointments/cancel/APPOINTMENT_ID
+❌ Cancel (Doctor)
+
+PATCH
+
+http://localhost:5000/api/v1/appointments/doctor/cancel/APPOINTMENT_ID
+⏱ SLOT APIs
+✅ Create Custom Slot
+
+POST
+
+http://localhost:5000/api/v1/slots/custom
+
+Body:
+
+{
+  "date": "2026-04-01",
+  "startTime": "10:00",
+  "endTime": "12:00",
+  "slotDuration": 30
+}
+✅ Create Recurring Slot
+
+POST
+
+http://localhost:5000/api/v1/slots/recurring
+
+Body:
+
+{
+  "daysOfWeek": ["MONDAY", "WEDNESDAY"],
+  "startTime": "10:00",
+  "endTime": "12:00",
+  "slotDuration": 30
+}
+✅ Get Available Slots
+
+GET
+
+http://localhost:5000/api/v1/slots/DOCTOR_ID?clinicId=CLINIC_ID&date=2026-04-01
+🔍 SEARCH APIs
+✅ Search Doctors (Public)
+
+GET
+
+http://localhost:5000/api/v1/search/doctors?clinicId=CLINIC_ID&specialization=cardiologist
+📊 DASHBOARD APIs
+🩺 Doctor Dashboard
+GET http://localhost:5000/api/v1/dashboard/doctor
+👤 Patient Dashboard
+GET http://localhost:5000/api/v1/dashboard/patient
+🏥 Clinic Dashboard
+GET http://localhost:5000/api/v1/dashboard/clinic
+🔐 Authorization Header
 Authorization: Bearer YOUR_ACCESS_TOKEN
-📦 RESPONSE FORMAT
-✅ Success
-{
-  "success": true,
-  "data": {}
-}
-❌ Error
-{
-  "success": false,
-  "message": "Error message"
-}
