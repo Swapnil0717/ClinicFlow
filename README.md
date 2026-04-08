@@ -1,70 +1,69 @@
-# 🚀 ClinicFlow – Clinic Management & Appointment Booking Backend
+# ClinicFlow – Clinic Management & Appointment Booking Backend
 
-A **production-ready backend system** designed for managing clinics, doctors, patients, and appointment workflows with **high precision scheduling and role-based access control (RBAC)**.
+A production-ready backend system for managing clinics, doctors, patients, and appointment workflows with high-precision scheduling and role-based access control (RBAC).
 
-This project demonstrates **scalable backend architecture, secure authentication, concurrency-safe booking, and real-world healthcare workflow implementation**.
+This project demonstrates scalable backend architecture, secure authentication, concurrency-safe booking, and real-world healthcare workflow implementation.
 
 ---
 
-## 📌 Overview
+## Overview
 
-ClinicFlow simulates a **real-world clinic management system** where different users interact based on their roles:
+ClinicFlow simulates a real-world clinic management system where different users interact based on defined roles:
 
-- Manage clinics and onboarding workflows  
-- Handle doctor verification and approvals  
+- Manage clinic onboarding and verification workflows  
+- Handle doctor approval and lifecycle management  
 - Enable patients to book appointments seamlessly  
 - Prevent double bookings using concurrency-safe logic  
 - Provide role-based dashboards and analytics  
 
 ---
 
-## ✨ Core Features
+## Core Features
 
-### 🔐 Authentication & Security
+### Authentication and Security
 
-- JWT-based authentication (Access + Refresh tokens)  
-- Secure token lifecycle (expiry & refresh flow)  
+- JWT-based authentication (Access and Refresh Tokens)  
+- Secure token lifecycle management  
 - Google OAuth login support  
-- Email verification & password reset  
-- Protected routes using middleware  
+- Email verification and password reset  
+- Middleware-based route protection  
 
 ---
 
-### 👥 Role-Based Access Control (RBAC)
+### Role-Based Access Control (RBAC)
 
-| Role    | Capabilities                                  |
-| ------- | --------------------------------------------- |
-| Patient | Book appointments, manage clinic              |
-| Doctor  | Manage appointments & availability            |
-| Admin   | Verify clinics, approve doctors, full control |
+| Role    | Capabilities                                       |
+|---------|----------------------------------------------------|
+| Patient | Book appointments and manage personal records      |
+| Doctor  | Manage availability and appointments               |
+| Admin   | Verify clinics, approve doctors, full system control |
 
-**✔ Enforced at:**
-
-- Route level (middleware)  
-- Service level (business logic restrictions)  
+RBAC is enforced at:
+- Route level using middleware  
+- Service layer using business logic  
 
 ---
 
-### 🏥 Clinic & Doctor Management
+### Clinic and Doctor Management
 
-- Clinic onboarding & verification system  
-- Doctor creation, approval, and rejection workflow  
-- Admin-controlled verification system  
+- Clinic onboarding and verification workflow  
+- Doctor creation, approval, and rejection system  
+- Admin-controlled verification process  
 - Public doctor listing (marketplace-ready)  
 
 ---
 
-### 📅 Appointment Booking System
+### Appointment Booking System
 
 - Slot-based appointment booking  
-- High precision scheduling system  
-- Concurrency-safe booking using DB transactions  
-- Prevents double booking scenarios  
-- Appointment cancellation (Patient & Doctor)  
+- High-precision scheduling  
+- Concurrency-safe booking using database transactions  
+- Prevention of double bookings  
+- Appointment cancellation by patient and doctor  
 
 ---
 
-### ⏱️ Slot Management System
+### Slot Management
 
 - Custom slot creation  
 - Recurring slot generation  
@@ -73,82 +72,90 @@ ClinicFlow simulates a **real-world clinic management system** where different u
 
 ---
 
-### 🔍 Search & Marketplace
+### Search System
 
-- Public doctor discovery system  
-- Search doctors by filters  
+- Public doctor discovery  
+- Filter-based doctor search  
 - Scalable marketplace-ready architecture  
 
 ---
 
-### 📊 Dashboard System
+### Dashboard System
 
-- Doctor dashboard (appointments & schedule)  
-- Patient dashboard (bookings & history)  
-- Clinic dashboard (operations overview)  
+- Doctor dashboard (appointments and schedule)  
+- Patient dashboard (booking history)  
+- Clinic dashboard (operational insights)  
 
 ---
 
-### ✅ Validation & Error Handling
+### Validation and Error Handling
 
-- Centralized validation system  
+- Centralized validation layer  
 - Consistent API response structure  
-- Proper HTTP status codes  
-- Clean error handling middleware  
+- Standard HTTP status codes  
+- Global error handling middleware  
 
 ---
 
-## 🏗️ Tech Stack
+## Tech Stack
 
-- **Node.js + Express**  
-- **TypeScript**  
-- **PostgreSQL**  
-- **Prisma ORM**  
-- **JWT Authentication**  
-- **Zod (Validation)**  
-- **Redis (Caching - Optional)**  
-- **Docker (Containerization)**  
-- **AWS / Cloud Deployment Ready**  
+- Node.js  
+- Express.js  
+- TypeScript  
+- PostgreSQL  
+- Prisma ORM  
+- JWT Authentication  
+- Zod (Validation)  
+- Redis (optional caching)  
+- Docker  
+- AWS (deployment ready)  
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
-
+```bash
 src/
 │
-├── config/ # Env, DB, and app configuration
-├── middleware/ # Auth, RBAC, validation, error handling
+├── config/         # Environment and app configuration
+├── middleware/     # Auth, RBAC, validation, error handling
 ├── modules/
-│ ├── auth/ # Authentication logic
-│ ├── clinic/ # Clinic management
-│ ├── doctor/ # Doctor workflows
-│ ├── appointment/# Booking system
-│ ├── slot/ # Slot management
-│ ├── dashboard/ # Role-based dashboards
-│ ├── admin/ # Admin operations
-│ ├── search/ # Doctor search system
+│   ├── auth/       
+│   ├── clinic/     
+│   ├── doctor/     
+│   ├── appointment/
+│   ├── slot/       
+│   ├── dashboard/  
+│   ├── admin/      
+│   ├── search/     
 │
-├── utils/ # Helpers (JWT, hashing, etc.)
-├── routes/ # Route registration
-└── server.ts # Entry point
-
+├── utils/          # Helpers (JWT, hashing, etc.)
+├── routes/         
+└── server.ts       
+```
 
 ---
 
-## ⚙️ Setup Instructions
+## Setup Instructions
 
-### 1️⃣ Clone Repository
+### Clone Repository
 
 ```bash
 git clone https://github.com/Swapnil0717/ClinicFlow.git
 cd clinicflow-backend
-2️⃣ Install Dependencies
+```
+
+### Install Dependencies
+
+```bash
 npm install
-3️⃣ Setup Environment Variables
+```
 
-Create .env file:
+### Configure Environment Variables
 
+Create a `.env` file:
+
+```env
 PORT=5000
 DATABASE_URL=your_postgres_url
 
@@ -159,78 +166,145 @@ EMAIL_USER=your_email
 EMAIL_PASS=your_password
 
 CLIENT_URL=http://localhost:3000
-4️⃣ Run Database Migrations
+```
+
+---
+
+### Run Database Migrations
+
+```bash
 npx prisma migrate dev
 npx prisma generate
-5️⃣ Start Development Server
+```
+
+---
+
+### Start Development Server
+
+```bash
 npm run dev
+```
 
-Server runs at:
+Server will run at:
 
+```
 http://localhost:5000/api/v1
-🔑 API Overview
-🔐 Auth
-Method	Endpoint
-POST	/auth/register
-POST	/auth/login
-POST	/auth/google
-GET	/auth/verify-email
-POST	/auth/forgot-password
-POST	/auth/reset-password
-POST	/auth/refresh
-POST	/auth/logout
-GET	/auth/me
-🏥 Clinics
-Method	Endpoint
-POST	/clinics
-GET	/clinics/me
-PATCH	/clinics/verify/:id
-👨‍⚕️ Doctors
-Method	Endpoint
-POST	/doctors
-GET	/doctors
-GET	/doctors/:id
-GET	/doctors/pending
-PATCH	/doctors/verify/:id
-PATCH	/doctors/reject/:id
-📅 Appointments
-Method	Endpoint
-POST	/appointments/book
-GET	/appointments/patient
-GET	/appointments/doctor
-PATCH	/appointments/cancel/:id
-PATCH	/appointments/doctor/cancel/:id
-⏱️ Slots
-Method	Endpoint
-POST	/slots/custom
-POST	/slots/recurring
-GET	/slots/:doctorId
-🔍 Search
-Method	Endpoint
-GET	/search/doctors
-📊 Dashboard
-Method	Endpoint
-GET	/dashboard/doctor
-GET	/dashboard/patient
-GET	/dashboard/clinic
-⚙️ Admin
-Method	Endpoint
-GET	/admin/pending-clinics
-GET	/admin/pending-doctors
-PATCH	/admin/verify-clinic/:id
-PATCH	/admin/verify-doctor/:id
-PATCH	/admin/reject-clinic/:id
-POST	/admin/become
-🔐 Access Control Summary
-Action	Patient	Doctor	Admin
-Book appointment	✅	❌	✅
-View appointments	✅ (own)	✅ (own)	✅
-Manage slots	❌	✅	✅
-Manage doctors	❌	❌	✅
-Verify clinics	❌	❌	✅
-Access dashboards	✅	✅	✅
-🧪 Example Requests
-Book Appointment
+```
+
+---
+
+## API Overview
+
+### Authentication
+
+| Method | Endpoint                |
+|--------|------------------------|
+| POST   | /auth/register         |
+| POST   | /auth/login            |
+| POST   | /auth/google           |
+| GET    | /auth/verify-email     |
+| POST   | /auth/forgot-password  |
+| POST   | /auth/reset-password   |
+| POST   | /auth/refresh          |
+| POST   | /auth/logout           |
+| GET    | /auth/me               |
+
+---
+
+### Clinics
+
+| Method | Endpoint              |
+|--------|----------------------|
+| POST   | /clinics             |
+| GET    | /clinics/me          |
+| PATCH  | /clinics/verify/:id  |
+
+---
+
+### Doctors
+
+| Method | Endpoint                 |
+|--------|--------------------------|
+| POST   | /doctors                 |
+| GET    | /doctors                 |
+| GET    | /doctors/:id             |
+| GET    | /doctors/pending         |
+| PATCH  | /doctors/verify/:id      |
+| PATCH  | /doctors/reject/:id      |
+
+---
+
+### Appointments
+
+| Method | Endpoint                             |
+|--------|--------------------------------------|
+| POST   | /appointments/book                   |
+| GET    | /appointments/patient                |
+| GET    | /appointments/doctor                 |
+| PATCH  | /appointments/cancel/:id             |
+| PATCH  | /appointments/doctor/cancel/:id      |
+
+---
+
+### Slots
+
+| Method | Endpoint             |
+|--------|----------------------|
+| POST   | /slots/custom        |
+| POST   | /slots/recurring     |
+| GET    | /slots/:doctorId     |
+
+---
+
+### Search
+
+| Method | Endpoint         |
+|--------|------------------|
+| GET    | /search/doctors  |
+
+---
+
+### Dashboard
+
+| Method | Endpoint               |
+|--------|------------------------|
+| GET    | /dashboard/doctor      |
+| GET    | /dashboard/patient     |
+| GET    | /dashboard/clinic      |
+
+---
+
+### Admin
+
+| Method | Endpoint                          |
+|--------|-----------------------------------|
+| GET    | /admin/pending-clinics            |
+| GET    | /admin/pending-doctors            |
+| PATCH  | /admin/verify-clinic/:id          |
+| PATCH  | /admin/verify-doctor/:id          |
+| PATCH  | /admin/reject-clinic/:id          |
+| POST   | /admin/become                     |
+
+---
+
+## Access Control Summary
+
+| Action              | Patient | Doctor | Admin |
+|--------------------|--------|--------|-------|
+| Book appointment   | Yes    | No     | Yes   |
+| View appointments  | Own    | Own    | All   |
+| Manage slots       | No     | Yes    | Yes   |
+| Manage doctors     | No     | No     | Yes   |
+| Verify clinics     | No     | No     | Yes   |
+| Access dashboards  | Yes    | Yes    | Yes   |
+
+---
+
+## Example Requests
+
+### Book Appointment
+
+```json
 POST /appointments/book
 
 {
@@ -238,33 +312,53 @@ POST /appointments/book
   "slotId": "456",
   "date": "2026-04-10"
 }
-Get Available Slots
+```
+
+---
+
+### Get Available Slots
+
+```bash
 GET /slots/:doctorId
-🧠 Design Decisions
-Concurrency-safe booking (DB transactions) → prevents double bookings
-RBAC enforced at service layer → prevents unauthorized access
-Modular architecture → scalable and maintainable
-Slot-based system → precise scheduling control
-Verification workflows → ensures trusted platform usage
-Marketplace-ready search → supports scaling
-⚠️ Assumptions
-Only verified doctors can accept appointments
-Clinics must be approved before becoming active
-Patients can only manage their own bookings
-Admin has full control over verification workflows
-Slots define availability and prevent conflicts
-🚀 Additional Enhancements
-Redis caching for performance optimization
-Rate limiting & API security
-Email & SMS notifications
-Payment integration (Stripe / Razorpay)
-Swagger / OpenAPI documentation
-Docker + CI/CD pipeline
-👨‍💻 Author
+```
 
-Pranav Pathare (Swapnil0717)
+---
 
-⭐ If you found this useful, consider starring the repo!
+## Design Decisions
 
+- Concurrency-safe booking using database transactions to prevent double bookings  
+- RBAC enforced at service level to ensure strict authorization  
+- Modular architecture for scalability and maintainability  
+- Slot-based scheduling for precise time management  
+- Verification workflows to maintain platform trust  
+- Marketplace-ready search architecture  
+
+---
+
+## Assumptions
+
+- Only verified doctors can accept appointments  
+- Clinics must be approved before activation  
+- Patients can manage only their own bookings  
+- Admin has full control over system verification  
+- Slots define availability and prevent conflicts  
+
+---
+
+## Future Enhancements
+
+- Redis caching for performance optimization  
+- Rate limiting and API security improvements  
+- Email and SMS notifications  
+- Payment integration (Stripe or Razorpay)  
+- Swagger / OpenAPI documentation  
+- Docker-based deployment with CI/CD  
+
+---
+
+## Author
+
+Pranav Pathare  
+GitHub: Swapnil0717  
 
 ---
