@@ -1,5 +1,18 @@
 # ClinicFlow – Clinic Management & Appointment Booking Backend
 
+![Node.js](https://img.shields.io/badge/Node.js-Backend-339933?logo=node.js&logoColor=white)
+![Express.js](https://img.shields.io/badge/Express.js-Framework-000000?logo=express&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-Strict-3178C6?logo=typescript&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-4169E1?logo=postgresql&logoColor=white)
+![Prisma](https://img.shields.io/badge/Prisma-ORM-2D3748?logo=prisma&logoColor=white)
+![JWT](https://img.shields.io/badge/Auth-JWT-000000?logo=jsonwebtokens&logoColor=white)
+![RBAC](https://img.shields.io/badge/Security-RBAC-red)
+![Zod](https://img.shields.io/badge/Validation-Zod-3E67B1)
+![Redis](https://img.shields.io/badge/Cache-Redis-DC382D?logo=redis&logoColor=white)
+![Docker](https://img.shields.io/badge/Container-Docker-2496ED?logo=docker&logoColor=white)
+![AWS](https://img.shields.io/badge/Deploy-AWS-232F3E?logo=amazonaws&logoColor=white)
+![Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen)
+
 A production-ready backend system for managing clinics, doctors, patients, and appointment workflows with high-precision scheduling and role-based access control (RBAC).
 
 This project demonstrates scalable backend architecture, secure authentication, concurrency-safe booking, and real-world healthcare workflow implementation.
