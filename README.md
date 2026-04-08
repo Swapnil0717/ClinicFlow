@@ -1,44 +1,35 @@
-# 🚀 ClinicFlow Backend
+ClinicFlow Backend
 
-A scalable **clinic management SaaS backend** built with Node.js, Express, TypeScript, Prisma, and PostgreSQL.
+A scalable clinic management SaaS backend built with Node.js, Express, TypeScript, Prisma, and PostgreSQL.
 
----
+Overview
 
-## 🏥 Overview
+ClinicFlow is a production-ready backend system designed to support real-world clinic workflows and healthcare operations. It provides a structured and secure foundation for managing clinics, doctors, patients, and appointments.
 
-ClinicFlow is a production-ready backend system that supports:
+Key capabilities include:
 
-- 🔐 JWT Authentication (Access + Refresh Tokens)
-- 🏥 Clinic onboarding & verification
-- 🩺 Doctor management system
-- 📅 Smart slot-based appointment booking
-- 📊 Role-based dashboards (Admin / Doctor / Patient)
-- 🔍 Public doctor search (Marketplace-ready)
-- ⚡ Race-condition safe booking
-
----
-
-## ⚙️ Tech Stack
-
-- **Backend:** Node.js + Express + TypeScript  
-- **Database:** PostgreSQL  
-- **ORM:** Prisma  
-- **Auth:** JWT (Access + Refresh)  
-- **Architecture:** Modular (Feature-based)
-
----
-
-## 🚀 Getting Started
-
-### 1️⃣ Clone Repository
-```bash
+JWT-based authentication with access and refresh tokens
+Clinic onboarding and verification workflows
+Doctor management and approval system
+Slot-based appointment booking with high precision
+Role-based dashboards for Admin, Doctor, and Patient
+Public doctor search for marketplace-style discovery
+Concurrency-safe booking to prevent double reservations
+Tech Stack
+Backend: Node.js, Express.js, TypeScript
+Database: PostgreSQL
+ORM: Prisma
+Authentication: JWT (Access and Refresh Tokens)
+Architecture: Modular, feature-based design
+Getting Started
+1. Clone the Repository
 git clone https://github.com/Swapnil0717/ClinicFlow.git
 cd clinicflow-backend
 npm install
-2️⃣ Environment Setup
+2. Environment Setup
 cp .env.example .env
 
-Update .env:
+Update the .env file:
 
 DATABASE_URL=
 JWT_ACCESS_SECRET=
@@ -46,18 +37,16 @@ JWT_REFRESH_SECRET=
 EMAIL_USER=
 EMAIL_PASS=
 CLIENT_URL=
-3️⃣ Database Setup
+3. Database Setup
 npx prisma migrate dev
 npx prisma generate
-4️⃣ Run Server
+4. Run the Server
 npm run dev
-🌐 Base URL
+Base URL
 http://localhost:5000/api/v1
-🔐 AUTH APIs
+Authentication APIs
 Register
-
 POST /auth/register
-
 {
   "name": "John Doe",
   "email": "john@example.com",
@@ -65,59 +54,37 @@ POST /auth/register
   "role": "PATIENT"
 }
 Login
-
 POST /auth/login
-
 {
   "email": "john@example.com",
   "password": "123456"
 }
 Google Login
-
 POST /auth/google
-
 {
   "idToken": "GOOGLE_ID_TOKEN"
 }
 Verify Email
-
 GET /auth/verify-email?token=TOKEN
-
 Forgot Password
-
 POST /auth/forgot-password
-
-{
-  "email": "john@example.com"
-}
 Reset Password
-
 POST /auth/reset-password
-
 {
   "token": "RESET_TOKEN",
   "newPassword": "123456"
 }
 Refresh Token
-
 POST /auth/refresh
-
-{
-  "refreshToken": "REFRESH_TOKEN"
-}
 Logout
-
 POST /auth/logout
-
 Get Current User
-
 GET /auth/me
-
-🏥 CLINIC APIs
+Clinic APIs
 Create Clinic
-
 POST /clinics
-🔒 Role: PATIENT
+
+Role: Patient
 
 {
   "name": "City Care Clinic",
@@ -125,18 +92,14 @@ POST /clinics
   "phone": "9999999999"
 }
 Get My Clinic
-
 GET /clinics/me
-
 Verify Clinic
-
 PATCH /clinics/verify/:id
-
-👨‍⚕️ DOCTOR APIs
+Doctor APIs
 Create Doctor
-
 POST /doctors
-🔒 ADMIN
+
+Role: Admin
 
 {
   "name": "Dr. Smith",
@@ -144,87 +107,36 @@ POST /doctors
   "experience": 5,
   "clinicId": "CLINIC_ID"
 }
-Get All Doctors
-
+Other Endpoints
 GET /doctors
-
-Get Doctor By ID
-
 GET /doctors/:id
-
-Pending Doctors
-
 GET /doctors/pending
-
-Verify Doctor
-
 PATCH /doctors/verify/:id
-
-Reject Doctor
-
 PATCH /doctors/reject/:id
-
-{
-  "reason": "Invalid documents"
-}
-👑 ADMIN APIs
-Pending Clinics
-
+Admin APIs
 GET /admin/pending-clinics
-
-Pending Doctors
-
 GET /admin/pending-doctors
-
-Verify Clinic
-
 PATCH /admin/verify-clinic/:id
-
-Verify Doctor
-
 PATCH /admin/verify-doctor/:id
-
-Reject Clinic
-
 PATCH /admin/reject-clinic/:id
-
-{
-  "reason": "Incomplete documents"
-}
-Become Admin
-
 POST /admin/become
-
-📅 APPOINTMENTS
+Appointments
 Book Appointment
-
 POST /appointments/book
-🔒 PATIENT
+
+Role: Patient
 
 {
   "subSlotId": "SUB_SLOT_ID"
 }
-Patient Appointments
-
+Other Endpoints
 GET /appointments/patient
-
-Doctor Appointments
-
 GET /appointments/doctor
-
-Cancel Appointment (Patient)
-
 PATCH /appointments/cancel/:appointmentId
-
-Cancel Appointment (Doctor)
-
 PATCH /appointments/doctor/cancel/:appointmentId
-
-⏱ SLOT APIs
+Slot Management
 Create Custom Slot
-
 POST /slots/custom
-
 {
   "date": "2026-04-01",
   "startTime": "10:00",
@@ -232,9 +144,7 @@ POST /slots/custom
   "slotDuration": 30
 }
 Create Recurring Slot
-
 POST /slots/recurring
-
 {
   "daysOfWeek": ["MONDAY", "WEDNESDAY"],
   "startTime": "10:00",
@@ -242,39 +152,25 @@ POST /slots/recurring
   "slotDuration": 30
 }
 Get Available Slots
-
 GET /slots/:doctorId?clinicId=CLINIC_ID&date=YYYY-MM-DD
-
-🔍 SEARCH APIs
-Search Doctors
-
+Search APIs
 GET /search/doctors?clinicId=CLINIC_ID&specialization=cardiologist
-
-📊 DASHBOARD APIs
-Doctor Dashboard
-
+Dashboard APIs
 GET /dashboard/doctor
-
-Patient Dashboard
-
 GET /dashboard/patient
-
-Clinic Dashboard
-
 GET /dashboard/clinic
-
-🔐 Authorization
+Authorization
 
 All protected routes require:
 
 Authorization: Bearer YOUR_ACCESS_TOKEN
-🧠 Architecture Highlights
-⚡ Race-condition safe booking (Prisma transactions)
-🧩 Modular architecture (feature-based)
-🔐 Role-based access control (RBAC)
-📅 Sub-slot booking precision
-🌍 Marketplace-ready doctor search
-📁 Project Structure
+Architecture Highlights
+Concurrency-safe appointment booking using database transactions
+Modular, feature-based architecture for scalability and maintainability
+Role-based access control (RBAC)
+Fine-grained slot and sub-slot booking system
+Marketplace-ready doctor discovery and search
+Project Structure
 src/
 ├── modules/
 │   ├── auth
@@ -288,21 +184,21 @@ src/
 ├── middleware/
 ├── utils/
 ├── config/
-📌 Future Improvements
-Pagination & filtering
-Email/SMS notifications
-Payment integration (Stripe/Razorpay)
-Swagger/OpenAPI docs
-Rate limiting & security hardening
-Docker support
-👨‍💻 Author
+Future Improvements
+Pagination and advanced filtering
+Email and SMS notifications
+Payment integration (Stripe, Razorpay)
+API documentation using Swagger/OpenAPI
+Rate limiting and additional security enhancements
+Full Docker-based deployment setup
+Author
 
 Pranav Pathare
 
-⭐ Support
+Support
 
-If you like this project:
+If you find this project useful:
 
-⭐ Star the repo
-🍴 Fork it
-🚀 Build on top of it
+Star the repository
+Fork and extend it
+Use it as a base for your own backend systems
