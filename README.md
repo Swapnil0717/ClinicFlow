@@ -268,15 +268,3 @@ Pranav Pathare (Swapnil0717)
 
 
 ---
-
-### 🔥 Tip
-When you paste this into GitHub:
-- It will **auto-render perfectly**
-- Tables + emojis + spacing = **clean professional look**
-- This is already **ATS + recruiter optimized**
-
----
-
-If you want next level:
-👉 I can add **badges (build, license, tech stack)**  
-👉 Or a **system design diagram (huge impact for FAANG)**
