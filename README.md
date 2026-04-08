@@ -4,23 +4,25 @@ A scalable clinic management SaaS backend built with Node.js, Express, TypeScrip
 
 Overview
 
-ClinicFlow is a production-ready backend system designed to support real-world clinic workflows and healthcare operations. It provides a structured and secure foundation for managing clinics, doctors, patients, and appointments.
+ClinicFlow is a production-ready backend system designed for real-world clinic workflows, enabling efficient management of clinics, doctors, patients, and appointments.
 
-Key capabilities include:
-
-JWT-based authentication with access and refresh tokens
+Core Features
+Secure authentication using JWT (Access + Refresh Tokens)
 Clinic onboarding and verification workflows
 Doctor management and approval system
 Slot-based appointment booking with high precision
-Role-based dashboards for Admin, Doctor, and Patient
-Public doctor search for marketplace-style discovery
-Concurrency-safe booking to prevent double reservations
+Role-based dashboards (Admin, Doctor, Patient)
+Public doctor search (Marketplace-ready)
+Concurrency-safe booking to prevent double appointments
 Tech Stack
-Backend: Node.js, Express.js, TypeScript
-Database: PostgreSQL
-ORM: Prisma
-Authentication: JWT (Access and Refresh Tokens)
-Architecture: Modular, feature-based design
+Category	Technology
+Backend	Node.js, Express.js, TypeScript
+Database	PostgreSQL
+ORM	Prisma
+Authentication	JWT (Access & Refresh Tokens)
+Architecture	Modular, Feature-Based
+Caching (Optional)	Redis
+Deployment	Docker, Cloud (AWS/Railway)
 Getting Started
 1. Clone the Repository
 git clone https://github.com/Swapnil0717/ClinicFlow.git
@@ -29,7 +31,7 @@ npm install
 2. Environment Setup
 cp .env.example .env
 
-Update the .env file:
+Update .env:
 
 DATABASE_URL=
 JWT_ACCESS_SECRET=
@@ -45,131 +47,68 @@ npm run dev
 Base URL
 http://localhost:5000/api/v1
 Authentication APIs
-Register
-POST /auth/register
-{
-  "name": "John Doe",
-  "email": "john@example.com",
-  "password": "123456",
-  "role": "PATIENT"
-}
-Login
-POST /auth/login
-{
-  "email": "john@example.com",
-  "password": "123456"
-}
-Google Login
-POST /auth/google
-{
-  "idToken": "GOOGLE_ID_TOKEN"
-}
-Verify Email
-GET /auth/verify-email?token=TOKEN
-Forgot Password
-POST /auth/forgot-password
-Reset Password
-POST /auth/reset-password
-{
-  "token": "RESET_TOKEN",
-  "newPassword": "123456"
-}
-Refresh Token
-POST /auth/refresh
-Logout
-POST /auth/logout
-Get Current User
-GET /auth/me
+Action	Method	Endpoint
+Register	POST	/auth/register
+Login	POST	/auth/login
+Google Login	POST	/auth/google
+Verify Email	GET	/auth/verify-email
+Forgot Password	POST	/auth/forgot-password
+Reset Password	POST	/auth/reset-password
+Refresh Token	POST	/auth/refresh
+Logout	POST	/auth/logout
+Current User	GET	/auth/me
 Clinic APIs
-Create Clinic
-POST /clinics
-
-Role: Patient
-
-{
-  "name": "City Care Clinic",
-  "address": "Pune",
-  "phone": "9999999999"
-}
-Get My Clinic
-GET /clinics/me
-Verify Clinic
-PATCH /clinics/verify/:id
+Action	Method	Endpoint	Role
+Create Clinic	POST	/clinics	Patient
+Get My Clinic	GET	/clinics/me	Authenticated
+Verify Clinic	PATCH	/clinics/verify/:id	Admin
 Doctor APIs
-Create Doctor
-POST /doctors
-
-Role: Admin
-
-{
-  "name": "Dr. Smith",
-  "specialization": "Cardiologist",
-  "experience": 5,
-  "clinicId": "CLINIC_ID"
-}
-Other Endpoints
-GET /doctors
-GET /doctors/:id
-GET /doctors/pending
-PATCH /doctors/verify/:id
-PATCH /doctors/reject/:id
+Action	Method	Endpoint	Role
+Create Doctor	POST	/doctors	Admin
+Get All Doctors	GET	/doctors	Public
+Get Doctor by ID	GET	/doctors/:id	Public
+Pending Doctors	GET	/doctors/pending	Admin
+Verify Doctor	PATCH	/doctors/verify/:id	Admin
+Reject Doctor	PATCH	/doctors/reject/:id	Admin
 Admin APIs
-GET /admin/pending-clinics
-GET /admin/pending-doctors
-PATCH /admin/verify-clinic/:id
-PATCH /admin/verify-doctor/:id
-PATCH /admin/reject-clinic/:id
-POST /admin/become
-Appointments
-Book Appointment
-POST /appointments/book
-
-Role: Patient
-
-{
-  "subSlotId": "SUB_SLOT_ID"
-}
-Other Endpoints
-GET /appointments/patient
-GET /appointments/doctor
-PATCH /appointments/cancel/:appointmentId
-PATCH /appointments/doctor/cancel/:appointmentId
-Slot Management
-Create Custom Slot
-POST /slots/custom
-{
-  "date": "2026-04-01",
-  "startTime": "10:00",
-  "endTime": "12:00",
-  "slotDuration": 30
-}
-Create Recurring Slot
-POST /slots/recurring
-{
-  "daysOfWeek": ["MONDAY", "WEDNESDAY"],
-  "startTime": "10:00",
-  "endTime": "12:00",
-  "slotDuration": 30
-}
-Get Available Slots
-GET /slots/:doctorId?clinicId=CLINIC_ID&date=YYYY-MM-DD
+Action	Method	Endpoint
+Pending Clinics	GET	/admin/pending-clinics
+Pending Doctors	GET	/admin/pending-doctors
+Verify Clinic	PATCH	/admin/verify-clinic/:id
+Verify Doctor	PATCH	/admin/verify-doctor/:id
+Reject Clinic	PATCH	/admin/reject-clinic/:id
+Become Admin	POST	/admin/become
+Appointments APIs
+Action	Method	Endpoint	Role
+Book Appointment	POST	/appointments/book	Patient
+Patient Appointments	GET	/appointments/patient	Patient
+Doctor Appointments	GET	/appointments/doctor	Doctor
+Cancel Appointment	PATCH	/appointments/cancel/:id	Patient
+Doctor Cancel	PATCH	/appointments/doctor/cancel/:id	Doctor
+Slot Management APIs
+Action	Method	Endpoint
+Create Custom Slot	POST	/slots/custom
+Create Recurring Slot	POST	/slots/recurring
+Get Available Slots	GET	/slots/:doctorId
 Search APIs
-GET /search/doctors?clinicId=CLINIC_ID&specialization=cardiologist
+Action	Method	Endpoint
+Search Doctors	GET	/search/doctors
 Dashboard APIs
-GET /dashboard/doctor
-GET /dashboard/patient
-GET /dashboard/clinic
+Dashboard	Endpoint
+Doctor Dashboard	/dashboard/doctor
+Patient Dashboard	/dashboard/patient
+Clinic Dashboard	/dashboard/clinic
 Authorization
 
 All protected routes require:
 
 Authorization: Bearer YOUR_ACCESS_TOKEN
 Architecture Highlights
-Concurrency-safe appointment booking using database transactions
-Modular, feature-based architecture for scalability and maintainability
-Role-based access control (RBAC)
+Concurrency-safe booking using database transactions
+Modular architecture (feature-based design)
+Role-Based Access Control (RBAC)
 Fine-grained slot and sub-slot booking system
-Marketplace-ready doctor discovery and search
+Marketplace-ready doctor search system
 Project Structure
 src/
 ├── modules/
@@ -188,8 +127,8 @@ Future Improvements
 Pagination and advanced filtering
 Email and SMS notifications
 Payment integration (Stripe, Razorpay)
-API documentation using Swagger/OpenAPI
-Rate limiting and additional security enhancements
+API documentation (Swagger/OpenAPI)
+Rate limiting and security enhancements
 Full Docker-based deployment setup
 Author
 
